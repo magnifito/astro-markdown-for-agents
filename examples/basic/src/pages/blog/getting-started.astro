@@ -1,0 +1,122 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const publishedAt = '2026-02-24';
+---
+
+<Layout
+  title="Getting Started"
+  description="How to add astro-markdown-for-agents to your Astro project in minutes."
+>
+  <article>
+    <header>
+      <h1>Getting Started with astro-markdown-for-agents</h1>
+      <p>
+        <time datetime={publishedAt}>February 24, 2026</time>
+      </p>
+    </header>
+
+    <p>
+      Adding Markdown-for-agents support to an existing Astro project takes about two
+      minutes. This post walks through the complete setup.
+    </p>
+
+    <h2>Prerequisites</h2>
+
+    <ul>
+      <li>An Astro project (v4 or v5)</li>
+      <li>Node.js 18 or later</li>
+      <li>
+        A server-side adapter if you want the middleware to run in production (e.g.
+        <code>@astrojs/cloudflare</code>, <code>@astrojs/node</code>)
+      </li>
+    </ul>
+
+    <h2>Step 1 — Install the package</h2>
+
+    <pre><code>npm install astro-markdown-for-agents</code></pre>
+
+    <h2>Step 2 — Register the integration</h2>
+
+    <pre><code>// astro.config.mjs
+import &#123; defineConfig &#125; from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
+import markdownForAgents from 'astro-markdown-for-agents';
+
+export default defineConfig(&#123;
+  output: 'server',
+  adapter: cloudflare(),
+  integrations: [markdownForAgents()],
+&#125;);</code></pre>
+
+    <p>
+      The integration works with any adapter. Swap <code>cloudflare()</code> for
+      <code>node(&#123; mode: 'standalone' &#125;)</code> if you are deploying to a
+      Node.js server.
+    </p>
+
+    <h2>Step 3 — Verify in dev mode</h2>
+
+    <p>Start the dev server and test with <code>curl</code>:</p>
+
+    <pre><code># Normal HTML response
+curl http://localhost:4321/
+
+# Markdown response — what AI agents receive
+curl -H "Accept: text/markdown" http://localhost:4321/</code></pre>
+
+    <p>
+      The second request should return <code>Content-Type: text/markdown</code> and
+      clean Markdown instead of HTML.
+    </p>
+
+    <h2>Optional — Custom agent detection</h2>
+
+    <p>
+      Pass <code>additionalAgents</code> to extend the built-in list with your own bot
+      names:
+    </p>
+
+    <pre><code>markdownForAgents(&#123;
+  additionalAgents: ['MyInternalCrawler', 'AnotherBot'],
+&#125;)</code></pre>
+
+    <p>
+      Any <code>User-Agent</code> string that contains one of those substrings (case-
+      insensitive) will trigger Markdown conversion.
+    </p>
+
+    <h2>How it works under the hood</h2>
+
+    <p>
+      The integration registers an Astro middleware via the
+      <code>astro:config:setup</code> hook. A companion Vite plugin exposes your options
+      through a virtual module (<code>virtual:astro-markdown-for-agents/config</code>)
+      so the middleware can read them at both dev and build time without any file I/O.
+    </p>
+
+    <blockquote>
+      The HTML-to-Markdown converter uses pure regex, making it compatible with
+      Cloudflare Workers and other edge runtimes that do not provide a DOM or Node.js
+      APIs.
+    </blockquote>
+
+    <h2>Further reading</h2>
+
+    <ul>
+      <li>
+        <a href="https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/"
+          >Cloudflare — Markdown for Agents</a
+        >
+      </li>
+      <li>
+        <a href="https://docs.astro.build/en/guides/middleware/">Astro — Middleware</a>
+      </li>
+      <li>
+        <a href="https://docs.astro.build/en/reference/integrations-reference/"
+          >Astro — Integration API</a
+        >
+      </li>
+    </ul>
+  </article>
+</Layout>

@@ -1,0 +1,86 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="About"
+  description="How astro-markdown-for-agents works under the hood."
+>
+  <h1>About</h1>
+
+  <p>
+    <strong>astro-markdown-for-agents</strong> is an Astro integration that registers
+    a middleware. The middleware inspects every incoming request and decides whether to
+    return the normal HTML response or a converted Markdown version.
+  </p>
+
+  <h2>Detection logic</h2>
+
+  <p>A request is treated as coming from an AI agent when either:</p>
+
+  <ol>
+    <li>
+      The <code>Accept</code> header includes <code>text/markdown</code> — this is the
+      explicit, standards-compliant way for an agent to opt in.
+    </li>
+    <li>
+      The <code>User-Agent</code> string matches one of the
+      <a
+        href="https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/"
+        >known AI crawlers</a
+      > (GPTBot, ClaudeBot, PerplexityBot, and many others).
+    </li>
+  </ol>
+
+  <p>All other requests pass through unchanged — human visitors see normal HTML.</p>
+
+  <h2>Conversion pipeline</h2>
+
+  <p>When an agent request is detected the middleware:</p>
+
+  <ol>
+    <li>Lets Astro render the page normally to HTML.</li>
+    <li>
+      Strips noise: <code>&lt;script&gt;</code>, <code>&lt;style&gt;</code>,
+      <code>&lt;nav&gt;</code>, <code>&lt;header&gt;</code>,
+      <code>&lt;footer&gt;</code>, <code>&lt;aside&gt;</code>.
+    </li>
+    <li>
+      Isolates the main content via <code>&lt;main&gt;</code>,
+      <code>&lt;article&gt;</code>, or <code>[role="main"]</code>.
+    </li>
+    <li>Converts headings, lists, links, images, and inline formatting to Markdown.</li>
+    <li>
+      Returns the result with <code>Content-Type: text/markdown; charset=utf-8</code>.
+    </li>
+  </ol>
+
+  <p>
+    The converter is implemented with pure regex — no DOM or Node.js APIs — so it runs
+    natively in Cloudflare Workers and any other edge runtime.
+  </p>
+
+  <h2>Edge runtime compatibility</h2>
+
+  <p>
+    All processing uses only the standard
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API">Fetch API</a>
+    primitives (<code>Request</code>, <code>Response</code>, <code>Headers</code>).
+    There are no <code>node:</code> imports anywhere in the middleware path.
+  </p>
+
+  <h2>Configuration</h2>
+
+  <pre><code>// astro.config.mjs
+import &#123; defineConfig &#125; from 'astro/config';
+import markdownForAgents from 'astro-markdown-for-agents';
+
+export default defineConfig(&#123;
+  integrations: [
+    markdownForAgents(&#123;
+      // Extend the built-in agent list with your own bots
+      additionalAgents: ['MyInternalBot'],
+    &#125;),
+  ],
+&#125;);</code></pre>
+</Layout>
