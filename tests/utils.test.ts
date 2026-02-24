@@ -59,4 +59,36 @@ describe('isAgentRequest', () => {
       ).toBe(true);
     });
   });
+
+  describe('extraAgents', () => {
+    it('returns true when UA matches an extra agent string', () => {
+      expect(
+        isAgentRequest(makeRequest({ 'user-agent': 'MyCustomBot/2.0' }), ['MyCustomBot']),
+      ).toBe(true);
+    });
+
+    it('extra agents are case-insensitive', () => {
+      expect(
+        isAgentRequest(makeRequest({ 'user-agent': 'mycustombot/2.0' }), ['MyCustomBot']),
+      ).toBe(true);
+    });
+
+    it('returns false when UA matches neither built-in nor extra agents', () => {
+      expect(
+        isAgentRequest(makeRequest({ 'user-agent': 'curl/8.5.0' }), ['MyCustomBot']),
+      ).toBe(false);
+    });
+
+    it('still detects built-in agents when extraAgents is provided', () => {
+      expect(
+        isAgentRequest(makeRequest({ 'user-agent': 'GPTBot/1.0' }), ['MyCustomBot']),
+      ).toBe(true);
+    });
+
+    it('works with an empty extraAgents array', () => {
+      expect(
+        isAgentRequest(makeRequest({ 'user-agent': 'GPTBot/1.0' }), []),
+      ).toBe(true);
+    });
+  });
 });

@@ -34,14 +34,18 @@ export const AI_USER_AGENTS: readonly string[] = [
  *
  * Detection order:
  * 1. `Accept` header includes `text/markdown` (explicit agent opt-in)
- * 2. `User-Agent` matches a known AI crawler
+ * 2. `User-Agent` matches a known AI crawler or a caller-supplied agent string
+ *
+ * @param request       The incoming HTTP request.
+ * @param extraAgents   Additional User-Agent substrings to match (from integration options).
  */
-export function isAgentRequest(request: Request): boolean {
+export function isAgentRequest(request: Request, extraAgents: string[] = []): boolean {
   const accept = request.headers.get('accept') ?? '';
   if (accept.includes('text/markdown')) {
     return true;
   }
 
   const ua = (request.headers.get('user-agent') ?? '').toLowerCase();
-  return AI_USER_AGENTS.some((agent) => ua.includes(agent.toLowerCase()));
+  const allAgents = extraAgents.length > 0 ? [...AI_USER_AGENTS, ...extraAgents] : AI_USER_AGENTS;
+  return allAgents.some((agent) => ua.includes(agent.toLowerCase()));
 }

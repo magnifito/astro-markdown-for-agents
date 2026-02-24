@@ -11,6 +11,10 @@ export interface MarkdownForAgentsOptions {
   additionalAgents?: string[];
 }
 
+/** Virtual module ID used to pass resolved options to the middleware. */
+const VIRTUAL_MODULE_ID = 'virtual:astro-markdown-for-agents/config';
+const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID;
+
 /**
  * Astro integration: `astro-markdown-for-agents`
  *
@@ -31,13 +35,38 @@ export interface MarkdownForAgentsOptions {
  * ```
  */
 export function markdownForAgents(
-  _options: MarkdownForAgentsOptions = {},
+  options: MarkdownForAgentsOptions = {},
 ): AstroIntegration {
+  const { additionalAgents = [] } = options;
+
   return {
     name: 'astro-markdown-for-agents',
     hooks: {
-      'astro:config:setup': ({ addMiddleware, logger }) => {
+      'astro:config:setup': ({ addMiddleware, updateConfig, logger }) => {
         logger.info('Registering markdown-for-agents middleware');
+
+        // Expose resolved options to the middleware via a virtual module so
+        // that `additionalAgents` is available at both dev and build time.
+        updateConfig({
+          vite: {
+            plugins: [
+              {
+                name: 'vite-plugin-astro-markdown-for-agents',
+                resolveId(id) {
+                  if (id === VIRTUAL_MODULE_ID) {
+                    return RESOLVED_VIRTUAL_MODULE_ID;
+                  }
+                },
+                load(id) {
+                  if (id === RESOLVED_VIRTUAL_MODULE_ID) {
+                    return `export const additionalAgents = ${JSON.stringify(additionalAgents)};`;
+                  }
+                },
+              },
+            ],
+          },
+        });
+
         addMiddleware({
           entrypoint: 'astro-markdown-for-agents/middleware',
           order: 'pre',
