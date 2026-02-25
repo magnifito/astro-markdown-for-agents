@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'astro';
-import { isAgentRequest } from './utils.js';
-import { htmlToMarkdown } from './html-to-markdown.js';
+import { isAgentRequest } from './utils.ts';
+import { htmlToMarkdown } from './html-to-markdown.ts';
 
 // Resolved at build/dev time by the Vite plugin registered in `src/index.ts`.
 // Falls back to an empty array when the virtual module is absent (e.g. in tests).

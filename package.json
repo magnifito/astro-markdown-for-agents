@@ -3,28 +3,25 @@
   "version": "0.1.0",
   "description": "Astro integration that serves Markdown to AI agents — Cloudflare free plan compatible",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./index.ts",
+      "default": "./index.ts"
     },
     "./middleware": {
-      "import": "./dist/middleware.js",
-      "types": "./dist/middleware.d.ts"
+      "import": "./src/middleware.ts",
+      "default": "./src/middleware.ts"
     }
   },
   "files": [
-    "dist",
+    "src",
+    "index.ts",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "prepublishOnly": "npm run build && npm test"
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=22.0.0",
@@ -50,6 +47,7 @@
     "astro": "^4.0.0 || ^5.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.3.0",
     "astro": "^5.0.0",
     "typescript": "^5.0.0",
     "vitest": "^2.0.0"

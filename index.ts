@@ -1,4 +1,7 @@
 import type { AstroIntegration } from 'astro';
+import fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { htmlToMarkdown } from './src/html-to-markdown.ts';
 
 export interface MarkdownForAgentsOptions {
   /**
@@ -71,6 +74,57 @@ export function markdownForAgents(
           entrypoint: 'astro-markdown-for-agents/middleware',
           order: 'pre',
         });
+      },
+      'astro:build:done': async ({ dir, routes, pages, logger }) => {
+        // Find all pages that generated an HTML file
+        const htmlPages = pages.filter((page) => page.pathname.endsWith('/') || page.pathname.endsWith('.html') || !page.pathname.includes('.'));
+
+        if (htmlPages.length === 0) return;
+
+        logger.info(`Generating Markdown files for ${htmlPages.length} built pages`);
+
+        let count = 0;
+        for (const page of htmlPages) {
+          try {
+            // Find the location of the built HTML file for this page
+            // The file name usually matches the pathname but can fall back to index.html
+            // page.pathname is e.g. "", "about/", "blog/getting-started/"
+            const cleanPath = page.pathname.replace(/^\/|\/$/g, '');
+            const possiblePaths = [
+              new URL(`./${cleanPath === '' ? 'index.html' : `${cleanPath}/index.html`}`, dir),
+              new URL(`./${cleanPath === '' ? 'index.html' : `${cleanPath}.html`}`, dir),
+            ];
+
+            let htmlFilePath: URL | undefined;
+            for (const path of possiblePaths) {
+              try {
+                const stat = await fs.stat(path);
+                if (stat.isFile()) {
+                  htmlFilePath = path;
+                  break;
+                }
+              } catch {
+                // ignore
+              }
+            }
+
+            if (!htmlFilePath) continue;
+
+            const htmlContent = await fs.readFile(htmlFilePath, 'utf-8');
+            const markdownContent = htmlToMarkdown(htmlContent);
+
+            // Calculate the output path for the Markdown file
+            // e.g. /index.html -> /index.md, /about/index.html -> /about/index.md
+            const mdFilePath = new URL(htmlFilePath.href.replace(/\.html$/, '.md'));
+
+            await fs.writeFile(mdFilePath, markdownContent, 'utf-8');
+            count++;
+          } catch (err) {
+            logger.error(`Failed to generate Markdown for ${page.pathname}: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }
+
+        logger.info(`Successfully generated ${count} Markdown files.`);
       },
     },
   };

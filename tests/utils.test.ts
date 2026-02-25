@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isAgentRequest, AI_USER_AGENTS } from '../src/utils.js';
+import { isAgentRequest, AI_USER_AGENTS } from '../src/utils.ts';
 
 function makeRequest(headers: Record<string, string> = {}): Request {
   return new Request('https://example.com/', { headers });

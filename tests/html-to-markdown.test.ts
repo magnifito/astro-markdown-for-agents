@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { htmlToMarkdown } from '../src/html-to-markdown.js';
+import { htmlToMarkdown } from '../src/html-to-markdown.ts';
 
 describe('htmlToMarkdown', () => {
   describe('headings', () => {

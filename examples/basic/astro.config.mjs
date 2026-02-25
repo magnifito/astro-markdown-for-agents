@@ -1,5 +1,4 @@
 import { defineConfig } from 'astro/config';
-import node from '@astrojs/node';
 import markdownForAgents from 'astro-markdown-for-agents';
 
 export default defineConfig({
@@ -8,8 +7,7 @@ export default defineConfig({
   //   Cloudflare Workers/Pages → @astrojs/cloudflare
   //   Deno Deploy             → @astrojs/deno
   //   Vercel                  → @astrojs/vercel
-  output: 'server',
-  adapter: node({ mode: 'standalone' }),
+  output: 'static',
   integrations: [
     markdownForAgents({
       // Uncomment to add custom bots on top of the built-in list:
