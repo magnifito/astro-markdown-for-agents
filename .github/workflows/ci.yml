@@ -10,27 +10,24 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [22]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
+          node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
   example:
     name: Build example
@@ -40,21 +37,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            examples/basic/package-lock.json
+          cache: pnpm
 
       - name: Build package
-        run: npm ci && npm run build
+        run: pnpm install --frozen-lockfile && pnpm run build
 
       - name: Install example dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         working-directory: examples/basic
 
       - name: Build example
-        run: npm run build
+        run: pnpm run build
         working-directory: examples/basic

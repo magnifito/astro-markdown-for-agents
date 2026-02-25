@@ -27,8 +27,10 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
   },
+  "packageManager": "pnpm@10.29.3",
   "license": "GPL-3.0",
   "keywords": [
     "astro",
