@@ -71,7 +71,7 @@ export function markdownForAgents(
         });
 
         addMiddleware({
-          entrypoint: 'astro-markdown-for-agents/middleware',
+          entrypoint: '@magnifito/astro-markdown-for-agents/middleware',
           order: 'pre',
         });
       },

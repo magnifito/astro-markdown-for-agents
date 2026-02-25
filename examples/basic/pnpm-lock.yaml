@@ -8,12 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@magnifito/astro-markdown-for-agents':
+        specifier: file:../..
+        version: file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3))
       astro:
         specifier: 5.17.3
         version: 5.17.3(rollup@4.59.0)(typescript@5.9.3)
-      astro-markdown-for-agents:
-        specifier: file:../..
-        version: file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3))
 
 packages:
 
@@ -510,6 +510,12 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
+  '@magnifito/astro-markdown-for-agents@file:../..':
+    resolution: {directory: ../.., type: directory}
+    engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
+    peerDependencies:
+      astro: ^4.0.0 || ^5.0.0
+
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
 
@@ -725,12 +731,6 @@ packages:
 
   array-iterate@2.0.1:
     resolution: {integrity: sha512-I1jXZMjAgCMmxT4qxXfPXa6SthSoE8h6gkSI9BGGNv8mP8G/v0blc+qFnZu6K42vTOiuME596QaLO0TP3Lk0xg==}
-
-  astro-markdown-for-agents@file:../..:
-    resolution: {directory: ../.., type: directory}
-    engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
-    peerDependencies:
-      astro: ^4.0.0 || ^5.0.0
 
   astro@5.17.3:
     resolution: {integrity: sha512-69dcfPe8LsHzklwj+hl+vunWUbpMB6pmg35mACjetxbJeUNNys90JaBM8ZiwsPK689SAj/4Zqb1ayaANls9/MA==}
@@ -1977,6 +1977,10 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
+  '@magnifito/astro-markdown-for-agents@file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3))':
+    dependencies:
+      astro: 5.17.3(rollup@4.59.0)(typescript@5.9.3)
+
   '@oslojs/encoding@1.1.0': {}
 
   '@rollup/pluginutils@5.3.0(rollup@4.59.0)':
@@ -2141,10 +2145,6 @@ snapshots:
   aria-query@5.3.2: {}
 
   array-iterate@2.0.1: {}
-
-  astro-markdown-for-agents@file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3)):
-    dependencies:
-      astro: 5.17.3(rollup@4.59.0)(typescript@5.9.3)
 
   astro@5.17.3(rollup@4.59.0)(typescript@5.9.3):
     dependencies:
