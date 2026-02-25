@@ -1,0 +1,16 @@
+{
+  "name": "astro-markdown-for-agents-example",
+  "description": "Example Astro site demonstrating the astro-markdown-for-agents integration",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.5.4",
+    "astro": "^5.0.0",
+    "astro-markdown-for-agents": "file:../.."
+  }
+}

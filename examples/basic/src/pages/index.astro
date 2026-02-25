@@ -1,0 +1,51 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Home" description="Welcome to the astro-markdown-for-agents example site.">
+  <h1>Astro Markdown for Agents</h1>
+
+  <p>
+    This example site demonstrates the
+    <a href="https://github.com/magnifito/astro-markdown-for-agents"
+      >astro-markdown-for-agents</a
+    > integration. AI agents that send an <code>Accept: text/markdown</code> header — or
+    that identify themselves with a known crawler User-Agent — automatically receive a
+    clean Markdown version of each page instead of raw HTML.
+  </p>
+
+  <h2>Why Markdown for agents?</h2>
+
+  <p>
+    Large language models process Markdown far more efficiently than HTML.
+    Stripping navigation chrome, scripts, and styling can reduce token usage by
+    <strong>80 % or more</strong> on a typical documentation page.
+  </p>
+
+  <blockquote>
+    Cloudflare's built-in Markdown for Agents feature does this automatically on paid
+    plans. This integration brings the same capability to any Astro site — including
+    the Cloudflare free tier.
+  </blockquote>
+
+  <h2>How to test it</h2>
+
+  <p>Start the dev server, then try both of these requests:</p>
+
+  <pre><code># Returns normal HTML
+curl http://localhost:4321/
+
+# Returns text/markdown — what an AI agent sees
+curl -H "Accept: text/markdown" http://localhost:4321/
+
+# Simulates a known AI crawler
+curl -H "User-Agent: GPTBot/1.1" http://localhost:4321/</code></pre>
+
+  <h2>Pages in this example</h2>
+
+  <ul>
+    <li><a href="/">Home</a> — this page</li>
+    <li><a href="/about">About</a> — explains how the integration works</li>
+    <li><a href="/blog/getting-started">Getting Started</a> — a sample blog post</li>
+  </ul>
+</Layout>
