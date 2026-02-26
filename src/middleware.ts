@@ -24,6 +24,12 @@ try {
  * Compatible with Cloudflare Workers (edge runtime) — no Node.js APIs used.
  */
 export const onRequest: MiddlewareHandler = async (context, next) => {
+  // Skip interception for prerendered pages during the build process
+  // to avoid Astro warnings about accessing headers when they aren't available.
+  if (context.isPrerendered) {
+    return next();
+  }
+
   // Pass non-agent requests straight through.
   if (!isAgentRequest(context.request, extraAgents)) {
     return next();
