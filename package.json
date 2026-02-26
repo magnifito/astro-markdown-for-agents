@@ -1,6 +1,6 @@
 {
   "name": "@puralex/astro-markdown-for-agents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Astro integration that serves Markdown to AI agents — Cloudflare free plan compatible",
   "type": "module",
   "main": "./index.ts",
@@ -39,9 +39,10 @@
     "llm",
     "llms-txt"
   ],
+  "homepage": "https://github.com/magnifito/astro-markdown-for-agents#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/puralex/astro-markdown-for-agents"
+    "url": "https://github.com/magnifito/astro-markdown-for-agents"
   },
   "peerDependencies": {
     "astro": "^4.0.0 || ^5.0.0"
