@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@magnifito/astro-markdown-for-agents':
+      '@puralex/astro-markdown-for-agents':
         specifier: file:../..
         version: file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3))
       astro:
@@ -510,7 +510,7 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@magnifito/astro-markdown-for-agents@file:../..':
+  '@puralex/astro-markdown-for-agents@file:../..':
     resolution: {directory: ../.., type: directory}
     engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
     peerDependencies:
@@ -1977,7 +1977,7 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@magnifito/astro-markdown-for-agents@file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3))':
+  '@puralex/astro-markdown-for-agents@file:../..(astro@5.17.3(rollup@4.59.0)(typescript@5.9.3))':
     dependencies:
       astro: 5.17.3(rollup@4.59.0)(typescript@5.9.3)
 

@@ -1,5 +1,5 @@
 import { defineConfig } from 'astro/config';
-import markdownForAgents from '@magnifito/astro-markdown-for-agents';
+import markdownForAgents from '@puralex/astro-markdown-for-agents';
 
 export default defineConfig({
   // output: 'server' is required for the middleware to run at request time in

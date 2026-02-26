@@ -71,7 +71,7 @@ export function markdownForAgents(
         });
 
         addMiddleware({
-          entrypoint: '@magnifito/astro-markdown-for-agents/middleware',
+          entrypoint: '@puralex/astro-markdown-for-agents/middleware',
           order: 'pre',
         });
       },
