@@ -75,7 +75,7 @@ export function markdownForAgents(
           order: 'pre',
         });
       },
-      'astro:build:done': async ({ dir, routes, pages, logger }) => {
+      'astro:build:done': async ({ dir, pages, logger }) => {
         // Find all pages that generated an HTML file
         const htmlPages = pages.filter((page) => page.pathname.endsWith('/') || page.pathname.endsWith('.html') || !page.pathname.includes('.'));
 

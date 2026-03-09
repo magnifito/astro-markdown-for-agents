@@ -21,6 +21,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "pretest": "pnpm --filter astro-markdown-for-agents-example install",
     "test": "vitest run"
   },
   "engines": {

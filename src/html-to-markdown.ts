@@ -25,6 +25,11 @@ export function htmlToMarkdown(html: string): string {
     /<pre[^>]*>\s*<code[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi,
     (_m, code) => '```\n' + decodeEntities(code) + '\n```\n\n',
   );
+  // <pre> without <code> (e.g. ASCII art, terminal output)
+  md = md.replace(
+    /<pre[^>]*>([\s\S]*?)<\/pre>/gi,
+    (_m, inner) => '```\n' + decodeEntities(stripTags(inner)) + '\n```\n\n',
+  );
 
   // ── 4. Headings ───────────────────────────────────────────────────────────
   for (let level = 1; level <= 6; level++) {
@@ -51,7 +56,7 @@ export function htmlToMarkdown(html: string): string {
     let i = 0;
     const items = inner.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m2: string, item: string) => {
       i++;
-      return `${i}. ${stripTags(item).trim()}\n`;
+      return `${i}. ${inlineToMarkdown(item).trim()}\n`;
     });
     return '\n' + items + '\n';
   });
@@ -59,13 +64,61 @@ export function htmlToMarkdown(html: string): string {
   // Unordered lists
   md = md.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (_m, inner) => {
     const items = inner.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m2: string, item: string) => {
-      return `- ${stripTags(item).trim()}\n`;
+      return `- ${inlineToMarkdown(item).trim()}\n`;
     });
     return '\n' + items + '\n';
   });
 
   // Remaining stray <li> not inside a list wrapper
-  md = md.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m, inner) => `- ${stripTags(inner).trim()}\n`);
+  md = md.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m, inner) => `- ${inlineToMarkdown(inner).trim()}\n`);
+
+  // ── 6b. Definition lists ───────────────────────────────────────────────────
+  md = md.replace(/<dt[^>]*>([\s\S]*?)<\/dt>/gi, (_m, inner) => `\n**${stripTags(inner).trim()}**\n`);
+  md = md.replace(/<dd[^>]*>([\s\S]*?)<\/dd>/gi, (_m, inner) => `: ${stripTags(inner).trim()}\n`);
+  md = md.replace(/<\/?dl[^>]*>/gi, '\n');
+
+  // ── 6c. Tables ────────────────────────────────────────────────────────────
+  md = md.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_m, inner) => {
+    const rows: string[][] = [];
+
+    // Collect header cells
+    const theadMatch = inner.match(/<thead[^>]*>([\s\S]*?)<\/thead>/i);
+    if (theadMatch) {
+      const headerRow: string[] = [];
+      const thRe = /<th[^>]*>([\s\S]*?)<\/th>/gi;
+      let th: RegExpExecArray | null;
+      while ((th = thRe.exec(theadMatch[1])) !== null) {
+        headerRow.push(stripTags(decodeEntities(th[1])).trim());
+      }
+      if (headerRow.length > 0) rows.push(headerRow);
+    }
+
+    // Collect body rows
+    const tbodyContent = inner.replace(/<thead[^>]*>[\s\S]*?<\/thead>/gi, '');
+    const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let tr: RegExpExecArray | null;
+    while ((tr = trRe.exec(tbodyContent)) !== null) {
+      const cells: string[] = [];
+      const tdRe = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+      let td: RegExpExecArray | null;
+      while ((td = tdRe.exec(tr[1])) !== null) {
+        cells.push(stripTags(decodeEntities(td[1])).trim());
+      }
+      if (cells.length > 0) rows.push(cells);
+    }
+
+    if (rows.length === 0) return '';
+
+    const colCount = Math.max(...rows.map((r) => r.length));
+    const pad = (row: string[]) =>
+      '| ' + row.map((c) => c.replace(/\|/g, '\\|')).concat(Array(colCount - row.length).fill('')).join(' | ') + ' |';
+
+    const lines: string[] = [];
+    lines.push(pad(rows[0]));
+    lines.push('| ' + Array(colCount).fill('---').join(' | ') + ' |');
+    for (let i = 1; i < rows.length; i++) lines.push(pad(rows[i]));
+    return '\n\n' + lines.join('\n') + '\n\n';
+  });
 
   // ── 7. Inline elements ────────────────────────────────────────────────────
   md = md.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
@@ -111,7 +164,7 @@ export function htmlToMarkdown(html: string): string {
 /** Remove an element and its content entirely. */
 function stripElement(html: string, tag: string): string {
   return html.replace(
-    new RegExp(`<${tag}\\b[^<]*(?:(?!<\\/${tag}>)<[^<]*)*<\\/${tag}>`, 'gi'),
+    new RegExp(`<${tag}[\\s\\S]*?<\\/${tag}>`, 'gi'),
     '',
   );
 }
@@ -122,20 +175,61 @@ function stripTags(html: string): string {
 }
 
 /**
- * Try to extract the innermost `<main>`, `<article>`, or `[role="main"]`
- * element. Returns null if none found, in which case the full body is used.
+ * Apply inline Markdown conversions (bold, italic, code, links) to a fragment,
+ * then strip any remaining tags. Used for list item and heading content so that
+ * inline formatting is preserved rather than discarded.
+ *
+ * Backtick spans are protected from the final stripTags pass by temporarily
+ * encoding their angle brackets so they aren't mistaken for HTML tags.
+ */
+function inlineToMarkdown(html: string): string {
+  let s = html;
+  // Code spans: decode entities inside, then protect content from stripTags
+  // by replacing < and > with their entity forms after conversion.
+  s = s.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => {
+    const decoded = decodeEntities(inner).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '`' + decoded + '`';
+  });
+  s = s.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
+  s = s.replace(/<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi, '*$1*');
+  s = s.replace(/<(?:s|del|strike)[^>]*>([\s\S]*?)<\/(?:s|del|strike)>/gi, '~~$1~~');
+  s = s.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => `[${stripTags(text).trim()}](${href})`);
+  s = s.replace(/<br\s*\/?>/gi, ' ');
+  s = stripTags(s);
+  // Restore entity-encoded angle brackets inside backtick spans
+  return decodeEntities(s);
+}
+
+/**
+ * Try to extract the main content area from the page.
+ *
+ * Priority: <main> → <article>(s) → role="main" → <body>
+ * Multiple <article> elements are concatenated so none are dropped.
+ * Returns null if none found, in which case the full HTML is used.
  */
 function extractMainContent(html: string): string | null {
-  const selectors: RegExp[] = [
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    /role="main"[^>]*>([\s\S]*?)<\/\w+>/i,
-    /<body[^>]*>([\s\S]*?)<\/body>/i,
-  ];
-  for (const re of selectors) {
-    const m = html.match(re);
-    if (m) return m[1];
+  // <main> — take the first one
+  const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+  if (mainMatch) return mainMatch[1];
+
+  // <article> — collect ALL and concatenate
+  const articleRe = /<article[^>]*>([\s\S]*?)<\/article>/gi;
+  const articles: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = articleRe.exec(html)) !== null) {
+    articles.push(m[1]);
   }
+  if (articles.length > 0) return articles.join('\n\n');
+
+  // role="main" — match the opening tag that carries the attribute, then
+  // capture until the corresponding closing tag (greedy on the tag name)
+  const roleMatch = html.match(/<(\w+)[^>]*\brole="main"[^>]*>([\s\S]*?)<\/\1>/i);
+  if (roleMatch) return roleMatch[2];
+
+  // <body> fallback
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) return bodyMatch[1];
+
   return null;
 }
 

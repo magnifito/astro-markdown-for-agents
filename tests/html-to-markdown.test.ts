@@ -73,6 +73,48 @@ describe('htmlToMarkdown', () => {
       expect(result).toContain('```');
       expect(result).toContain('const x = 1;');
     });
+
+    it('converts bare <pre> (no <code>) to fenced code block', () => {
+      const result = htmlToMarkdown('<pre>  line1\n  line2</pre>');
+      expect(result).toContain('```');
+      expect(result).toContain('line1');
+      expect(result).toContain('line2');
+    });
+  });
+
+  describe('tables', () => {
+    it('converts a simple table with thead/tbody to Markdown', () => {
+      const result = htmlToMarkdown(
+        '<table><thead><tr><th>Name</th><th>Age</th></tr></thead>' +
+        '<tbody><tr><td>Alice</td><td>30</td></tr><tr><td>Bob</td><td>25</td></tr></tbody></table>',
+      );
+      expect(result).toContain('| Name | Age |');
+      expect(result).toContain('| --- | --- |');
+      expect(result).toContain('| Alice | 30 |');
+      expect(result).toContain('| Bob | 25 |');
+    });
+
+    it('converts a table without thead (all rows treated as body)', () => {
+      const result = htmlToMarkdown(
+        '<table><tr><td>A</td><td>B</td></tr><tr><td>C</td><td>D</td></tr></table>',
+      );
+      expect(result).toContain('| A | B |');
+      expect(result).toContain('| --- | --- |');
+      expect(result).toContain('| C | D |');
+    });
+
+    it('escapes pipe characters inside table cells', () => {
+      const result = htmlToMarkdown('<table><tr><td>a | b</td></tr></table>');
+      expect(result).toContain('a \\| b');
+    });
+  });
+
+  describe('definition lists', () => {
+    it('converts <dl>/<dt>/<dd> to bold term + colon definition', () => {
+      const result = htmlToMarkdown('<dl><dt>Term</dt><dd>Definition</dd></dl>');
+      expect(result).toContain('**Term**');
+      expect(result).toContain(': Definition');
+    });
   });
 
   describe('block elements', () => {
@@ -153,6 +195,19 @@ describe('htmlToMarkdown', () => {
     it('falls back to <article> if no <main>', () => {
       const result = htmlToMarkdown('<article><h2>Post</h2></article>');
       expect(result).toContain('## Post');
+    });
+
+    it('concatenates multiple <article> elements', () => {
+      const result = htmlToMarkdown(
+        '<article><h2>First</h2></article><article><h2>Second</h2></article>',
+      );
+      expect(result).toContain('## First');
+      expect(result).toContain('## Second');
+    });
+
+    it('uses role="main" element when no <main> or <article>', () => {
+      const result = htmlToMarkdown('<div role="main"><p>main content</p></div>');
+      expect(result).toContain('main content');
     });
   });
 });

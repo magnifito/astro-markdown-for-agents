@@ -46,11 +46,15 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   const html = await response.text();
   const markdown = htmlToMarkdown(html);
 
+  const newHeaders = new Headers(response.headers);
+  newHeaders.set('content-type', 'text/markdown; charset=utf-8');
+  newHeaders.set('x-original-content-type', contentType);
+  // Append to any existing Vary value so CDN/proxy cache varies correctly.
+  const existingVary = newHeaders.get('vary');
+  newHeaders.set('vary', existingVary ? `${existingVary}, Accept, User-Agent` : 'Accept, User-Agent');
+
   return new Response(markdown, {
     status: response.status,
-    headers: {
-      'content-type': 'text/markdown; charset=utf-8',
-      'x-original-content-type': contentType,
-    },
+    headers: newHeaders,
   });
 };
