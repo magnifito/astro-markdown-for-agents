@@ -7,28 +7,44 @@
 export function htmlToMarkdown(html: string): string {
   let md = html;
 
-  // ── 1. Strip unwanted block-level elements entirely ──────────────────────
+  // ── 1. Strip safe noise elements (never carry content) ───────────────────
   md = stripElement(md, 'script');
   md = stripElement(md, 'style');
   md = stripElement(md, 'nav');
-  md = stripElement(md, 'header');
-  md = stripElement(md, 'footer');
-  md = stripElement(md, 'aside');
   md = stripElement(md, 'noscript');
 
-  // ── 2. Try to isolate the main content area ───────────────────────────────
-  const main = extractMainContent(md);
+  // ── 2. Extract main content region ───────────────────────────────────────
+  // Done BEFORE stripping <header>/<footer> so that a <header><h1>Post Title
+  // </h1></header> inside <article> or <main> is preserved. The extraction
+  // pulls only the inner region; page-level wrappers are excluded automatically
+  // when the source has <main> or <article>. For the <body> fallback we strip
+  // them afterwards.
+  const { content: main, fromBody } = extractMainContent(md);
   if (main) md = main;
 
+  // ── 3a. Strip layout chrome ───────────────────────────────────────────────
+  // When extraction used <body> as fallback, the page-level <header>, <footer>
+  // and <aside> are still present inside the extracted string — strip them.
+  // When extraction used <main>/<article>, those wrappers are already outside
+  // the extracted content so we only need to strip <aside>.
+  md = stripElement(md, 'aside');
+  if (fromBody) {
+    md = stripElement(md, 'header');
+    md = stripElement(md, 'footer');
+  }
+
   // ── 3. Fenced code blocks BEFORE inline code (order matters) ─────────────
+  // Do NOT decode entities here — keep &lt;/&gt; encoded so that step 10
+  // (stripTags) cannot mistake decoded angle brackets for HTML tags and delete
+  // them. Step 11 (decodeEntities) will restore them in the final output.
   md = md.replace(
     /<pre[^>]*>\s*<code[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi,
-    (_m, code) => '```\n' + decodeEntities(code) + '\n```\n\n',
+    (_m, code) => '```\n' + stripTags(code) + '\n```\n\n',
   );
   // <pre> without <code> (e.g. ASCII art, terminal output)
   md = md.replace(
     /<pre[^>]*>([\s\S]*?)<\/pre>/gi,
-    (_m, inner) => '```\n' + decodeEntities(stripTags(inner)) + '\n```\n\n',
+    (_m, inner) => '```\n' + stripTags(inner) + '\n```\n\n',
   );
 
   // ── 4. Headings ───────────────────────────────────────────────────────────
@@ -36,14 +52,20 @@ export function htmlToMarkdown(html: string): string {
     const hashes = '#'.repeat(level);
     md = md.replace(
       new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi'),
-      (_m, inner) => `\n\n${hashes} ${stripTags(inner).trim()}\n\n`,
+      (_m, inner) => `\n\n${hashes} ${inlineToMarkdown(inner).trim()}\n\n`,
     );
   }
 
   // ── 5. Block elements ─────────────────────────────────────────────────────
   md = md.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, (_m, inner) => `\n\n${inner}\n\n`);
   md = md.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (_m, inner) => {
-    return inner
+    // Strip inner block wrappers (<p>, <div>, etc.) so their text content
+    // lands on the correct lines — otherwise "> <p>text</p>" splits into
+    // "> " on one line and "text" unquoted on the next.
+    const text = inner
+      .replace(/<\/?(p|div|section)[^>]*>/gi, '\n')
+      .trim();
+    return text
       .split('\n')
       .map((line: string) => `> ${line}`)
       .join('\n') + '\n\n';
@@ -73,8 +95,8 @@ export function htmlToMarkdown(html: string): string {
   md = md.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m, inner) => `- ${inlineToMarkdown(inner).trim()}\n`);
 
   // ── 6b. Definition lists ───────────────────────────────────────────────────
-  md = md.replace(/<dt[^>]*>([\s\S]*?)<\/dt>/gi, (_m, inner) => `\n**${stripTags(inner).trim()}**\n`);
-  md = md.replace(/<dd[^>]*>([\s\S]*?)<\/dd>/gi, (_m, inner) => `: ${stripTags(inner).trim()}\n`);
+  md = md.replace(/<dt[^>]*>([\s\S]*?)<\/dt>/gi, (_m, inner) => `\n**${inlineToMarkdown(inner).trim()}**\n`);
+  md = md.replace(/<dd[^>]*>([\s\S]*?)<\/dd>/gi, (_m, inner) => `: ${inlineToMarkdown(inner).trim()}\n`);
   md = md.replace(/<\/?dl[^>]*>/gi, '\n');
 
   // ── 6c. Tables ────────────────────────────────────────────────────────────
@@ -88,7 +110,7 @@ export function htmlToMarkdown(html: string): string {
       const thRe = /<th[^>]*>([\s\S]*?)<\/th>/gi;
       let th: RegExpExecArray | null;
       while ((th = thRe.exec(theadMatch[1])) !== null) {
-        headerRow.push(stripTags(decodeEntities(th[1])).trim());
+        headerRow.push(inlineToMarkdown(th[1]).trim());
       }
       if (headerRow.length > 0) rows.push(headerRow);
     }
@@ -102,7 +124,7 @@ export function htmlToMarkdown(html: string): string {
       const tdRe = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
       let td: RegExpExecArray | null;
       while ((td = tdRe.exec(tr[1])) !== null) {
-        cells.push(stripTags(decodeEntities(td[1])).trim());
+        cells.push(inlineToMarkdown(td[1]).trim());
       }
       if (cells.length > 0) rows.push(cells);
     }
@@ -124,22 +146,24 @@ export function htmlToMarkdown(html: string): string {
   md = md.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
   md = md.replace(/<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi, '*$1*');
   md = md.replace(/<(?:s|del|strike)[^>]*>([\s\S]*?)<\/(?:s|del|strike)>/gi, '~~$1~~');
-  md = md.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => '`' + decodeEntities(inner) + '`');
+  // Keep entities encoded — step 11 decodes everything uniformly at the end.
+  md = md.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => '`' + inner + '`');
 
   // ── 8. Links and images ───────────────────────────────────────────────────
+  // Use a capture group for the quote character so both " and ' are matched.
   md = md.replace(
-    /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
-    (_m, href, text) => `[${stripTags(text).trim()}](${href})`,
+    /<a[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi,
+    (_m, _q, href, text) => `[${stripTags(text).trim()}](${href})`,
   );
   md = md.replace(
-    /<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*\/?>/gi,
-    '![$1]($2)',
+    /<img[^>]*alt=(["'])(.*?)\1[^>]*src=(["'])(.*?)\3[^>]*\/?>/gi,
+    (_m, _q1, alt, _q2, src) => `![${alt}](${src})`,
   );
   md = md.replace(
-    /<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*\/?>/gi,
-    '![$2]($1)',
+    /<img[^>]*src=(["'])(.*?)\1[^>]*alt=(["'])(.*?)\3[^>]*\/?>/gi,
+    (_m, _q1, src, _q2, alt) => `![${alt}](${src})`,
   );
-  md = md.replace(/<img[^>]*src="([^"]*)"[^>]*\/?>/gi, '![]($1)');
+  md = md.replace(/<img[^>]*src=(["'])(.*?)\1[^>]*\/?>/gi, (_m, _q, src) => `![](${src})`);
 
   // ── 9. Line breaks ────────────────────────────────────────────────────────
   md = md.replace(/<br\s*\/?>/gi, '\n');
@@ -184,20 +208,15 @@ function stripTags(html: string): string {
  */
 function inlineToMarkdown(html: string): string {
   let s = html;
-  // Code spans: decode entities inside, then protect content from stripTags
-  // by replacing < and > with their entity forms after conversion.
-  s = s.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => {
-    const decoded = decodeEntities(inner).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return '`' + decoded + '`';
-  });
+  // Keep entities encoded inside code spans so that step 10 (stripTags) cannot
+  // mistake decoded angle brackets for HTML tags. Step 11 decodes everything.
+  s = s.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => '`' + inner + '`');
   s = s.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
   s = s.replace(/<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi, '*$1*');
   s = s.replace(/<(?:s|del|strike)[^>]*>([\s\S]*?)<\/(?:s|del|strike)>/gi, '~~$1~~');
-  s = s.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => `[${stripTags(text).trim()}](${href})`);
+  s = s.replace(/<a[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, (_m, _q, href, text) => `[${stripTags(text).trim()}](${href})`);
   s = s.replace(/<br\s*\/?>/gi, ' ');
-  s = stripTags(s);
-  // Restore entity-encoded angle brackets inside backtick spans
-  return decodeEntities(s);
+  return stripTags(s);
 }
 
 /**
@@ -205,12 +224,16 @@ function inlineToMarkdown(html: string): string {
  *
  * Priority: <main> → <article>(s) → role="main" → <body>
  * Multiple <article> elements are concatenated so none are dropped.
- * Returns null if none found, in which case the full HTML is used.
+ *
+ * Returns `{ content, fromBody }` where `fromBody` is true only when the
+ * <body> fallback was used — callers use this to decide whether to strip
+ * <header>/<footer> from the result (they're inside <body> but outside
+ * <main>/<article>, so the <body> fallback still contains them).
  */
-function extractMainContent(html: string): string | null {
+function extractMainContent(html: string): { content: string | null; fromBody: boolean } {
   // <main> — take the first one
   const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
-  if (mainMatch) return mainMatch[1];
+  if (mainMatch) return { content: mainMatch[1], fromBody: false };
 
   // <article> — collect ALL and concatenate
   const articleRe = /<article[^>]*>([\s\S]*?)<\/article>/gi;
@@ -219,18 +242,18 @@ function extractMainContent(html: string): string | null {
   while ((m = articleRe.exec(html)) !== null) {
     articles.push(m[1]);
   }
-  if (articles.length > 0) return articles.join('\n\n');
+  if (articles.length > 0) return { content: articles.join('\n\n'), fromBody: false };
 
   // role="main" — match the opening tag that carries the attribute, then
   // capture until the corresponding closing tag (greedy on the tag name)
   const roleMatch = html.match(/<(\w+)[^>]*\brole="main"[^>]*>([\s\S]*?)<\/\1>/i);
-  if (roleMatch) return roleMatch[2];
+  if (roleMatch) return { content: roleMatch[2], fromBody: false };
 
-  // <body> fallback
+  // <body> fallback — still contains <header>/<footer> wrappers
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  if (bodyMatch) return bodyMatch[1];
+  if (bodyMatch) return { content: bodyMatch[1], fromBody: true };
 
-  return null;
+  return { content: null, fromBody: false };
 }
 
 /** Decode common HTML entities. */

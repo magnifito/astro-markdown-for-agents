@@ -49,6 +49,9 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   const newHeaders = new Headers(response.headers);
   newHeaders.set('content-type', 'text/markdown; charset=utf-8');
   newHeaders.set('x-original-content-type', contentType);
+  // The Markdown body is shorter than the original HTML. Remove the stale
+  // Content-Length so the runtime recalculates it rather than truncating.
+  newHeaders.delete('content-length');
   // Append to any existing Vary value so CDN/proxy cache varies correctly.
   const existingVary = newHeaders.get('vary');
   newHeaders.set('vary', existingVary ? `${existingVary}, Accept, User-Agent` : 'Accept, User-Agent');

@@ -9,6 +9,14 @@ describe('htmlToMarkdown', () => {
         expect(htmlToMarkdown(`<h${level}>Title</h${level}>`)).toBe(`${hashes} Title`);
       }
     });
+
+    it('preserves inline code inside headings', () => {
+      expect(htmlToMarkdown('<h2>Use <code>--flag</code> option</h2>')).toContain('## Use `--flag` option');
+    });
+
+    it('preserves bold inside headings', () => {
+      expect(htmlToMarkdown('<h3>The <strong>main</strong> idea</h3>')).toContain('### The **main** idea');
+    });
   });
 
   describe('inline formatting', () => {
@@ -40,6 +48,12 @@ describe('htmlToMarkdown', () => {
       );
     });
 
+    it('converts <a href> with single-quoted attribute', () => {
+      expect(htmlToMarkdown("<a href='https://example.com'>click</a>")).toContain(
+        '[click](https://example.com)',
+      );
+    });
+
     it('converts <img alt src> to ![alt](src)', () => {
       expect(htmlToMarkdown('<img alt="logo" src="/logo.png" />')).toContain('![logo](/logo.png)');
     });
@@ -50,6 +64,10 @@ describe('htmlToMarkdown', () => {
 
     it('converts <img src> with no alt to ![](src)', () => {
       expect(htmlToMarkdown('<img src="/logo.png" />')).toContain('![](/logo.png)');
+    });
+
+    it('converts <img> with single-quoted attributes', () => {
+      expect(htmlToMarkdown("<img alt='logo' src='/logo.png' />")).toContain('![logo](/logo.png)');
     });
   });
 
@@ -79,6 +97,16 @@ describe('htmlToMarkdown', () => {
       expect(result).toContain('```');
       expect(result).toContain('line1');
       expect(result).toContain('line2');
+    });
+
+    it('preserves HTML-encoded angle brackets inside code blocks', () => {
+      const result = htmlToMarkdown('<pre><code>&lt;div class="foo"&gt;\n  &lt;p&gt;Hello&lt;/p&gt;\n&lt;/div&gt;</code></pre>');
+      expect(result).toContain('<div class="foo">');
+      expect(result).toContain('<p>Hello</p>');
+    });
+
+    it('preserves HTML-encoded angle brackets inside inline code', () => {
+      expect(htmlToMarkdown('<p>Use <code>&lt;span&gt;</code> here</p>')).toContain('`<span>`');
     });
   });
 
@@ -120,6 +148,11 @@ describe('htmlToMarkdown', () => {
   describe('block elements', () => {
     it('converts <blockquote> to > prefix', () => {
       expect(htmlToMarkdown('<blockquote>quoted text</blockquote>')).toContain('> quoted text');
+    });
+
+    it('converts <blockquote><p> so quoted text is actually prefixed with >', () => {
+      const result = htmlToMarkdown('<blockquote><p>quoted text</p></blockquote>');
+      expect(result).toContain('> quoted text');
     });
 
     it('converts <hr> to ---', () => {
@@ -184,6 +217,14 @@ describe('htmlToMarkdown', () => {
   });
 
   describe('main content extraction', () => {
+    it('preserves <header> inside <article> (post title pattern)', () => {
+      const result = htmlToMarkdown(
+        '<body><header>site header</header><article><header><h1>Post Title</h1></header><p>body</p></article></body>',
+      );
+      expect(result).toContain('# Post Title');
+      expect(result).toContain('body');
+    });
+
     it('prefers <main> over surrounding noise', () => {
       const result = htmlToMarkdown(
         '<body><nav>nav</nav><main><h1>Article</h1><p>Body text.</p></main></body>',

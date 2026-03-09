@@ -133,12 +133,12 @@ describe('User-Agent: GPTBot', () => {
   });
 });
 
-describe('non-HTML resources are passed through', () => {
-  it('does not convert a non-existent asset (404 non-HTML)', async () => {
-    const res = await get('/nonexistent.png', { accept: 'text/markdown' });
-    // 404 page is HTML — that's fine, middleware converts it
-    // But real binary assets (if they existed) should not be converted.
-    // Here we just verify the server responds without crashing.
-    expect(res.status).toBeDefined();
+describe('non-HTML resources are passed through unchanged', () => {
+  it('serves a static CSS file as text/css even with Accept: text/markdown', async () => {
+    const res = await get('/style.css', { accept: 'text/markdown' });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/css');
+    const body = await res.text();
+    expect(body).toContain('margin');
   });
 });
