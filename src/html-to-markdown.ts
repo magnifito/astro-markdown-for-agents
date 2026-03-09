@@ -1,3 +1,9 @@
+// Heading regexes hoisted so they are compiled once, not per htmlToMarkdown call.
+const HEADING_RE: RegExp[] = Array.from(
+  { length: 7 },
+  (_, level) => new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi'),
+);
+
 /**
  * Converts an HTML string to Markdown.
  *
@@ -19,16 +25,14 @@ export function htmlToMarkdown(html: string): string {
   // pulls only the inner region; page-level wrappers are excluded automatically
   // when the source has <main> or <article>. For the <body> fallback we strip
   // them afterwards.
-  const { content: main, fromBody } = extractMainContent(md);
+  const { content: main, needsChromStrip } = extractMainContent(md);
   if (main) md = main;
 
   // ── 3a. Strip layout chrome ───────────────────────────────────────────────
-  // When extraction used <body> as fallback, the page-level <header>, <footer>
-  // and <aside> are still present inside the extracted string — strip them.
-  // When extraction used <main>/<article>, those wrappers are already outside
-  // the extracted content so we only need to strip <aside>.
+  // <main>/<article> extraction already excludes page-level wrappers, so only
+  // strip <header>/<footer> when we fell back to <body> (they're still inside).
   md = stripElement(md, 'aside');
-  if (fromBody) {
+  if (needsChromStrip) {
     md = stripElement(md, 'header');
     md = stripElement(md, 'footer');
   }
@@ -49,10 +53,9 @@ export function htmlToMarkdown(html: string): string {
 
   // ── 4. Headings ───────────────────────────────────────────────────────────
   for (let level = 1; level <= 6; level++) {
-    const hashes = '#'.repeat(level);
     md = md.replace(
-      new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi'),
-      (_m, inner) => `\n\n${hashes} ${inlineToMarkdown(inner).trim()}\n\n`,
+      HEADING_RE[level],
+      (_m, inner) => `\n\n${'#'.repeat(level)} ${inlineToMarkdown(inner).trim()}\n\n`,
     );
   }
 
@@ -62,11 +65,11 @@ export function htmlToMarkdown(html: string): string {
     // Strip inner block wrappers (<p>, <div>, etc.) so their text content
     // lands on the correct lines — otherwise "> <p>text</p>" splits into
     // "> " on one line and "text" unquoted on the next.
-    const text = inner
-      .replace(/<\/?(p|div|section)[^>]*>/gi, '\n')
-      .trim();
+    const text = inlineToMarkdown(inner
+      .replace(/<\/?(p|div|section)[^>]*>/gi, '\n'));
     return text
       .split('\n')
+      .filter((line: string) => line.trim() !== '')
       .map((line: string) => `> ${line}`)
       .join('\n') + '\n\n';
   });
@@ -225,15 +228,15 @@ function inlineToMarkdown(html: string): string {
  * Priority: <main> → <article>(s) → role="main" → <body>
  * Multiple <article> elements are concatenated so none are dropped.
  *
- * Returns `{ content, fromBody }` where `fromBody` is true only when the
- * <body> fallback was used — callers use this to decide whether to strip
- * <header>/<footer> from the result (they're inside <body> but outside
- * <main>/<article>, so the <body> fallback still contains them).
+ * Returns `{ content, needsChromStrip }` where `needsChromStrip` is true only
+ * when the <body> fallback was used — the caller must then strip <header> and
+ * <footer> from the result because they're inside <body> but were not excluded
+ * by the extraction (unlike <main>/<article> which already exclude them).
  */
-function extractMainContent(html: string): { content: string | null; fromBody: boolean } {
+function extractMainContent(html: string): { content: string | null; needsChromStrip: boolean } {
   // <main> — take the first one
   const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
-  if (mainMatch) return { content: mainMatch[1], fromBody: false };
+  if (mainMatch) return { content: mainMatch[1], needsChromStrip: false };
 
   // <article> — collect ALL and concatenate
   const articleRe = /<article[^>]*>([\s\S]*?)<\/article>/gi;
@@ -242,18 +245,18 @@ function extractMainContent(html: string): { content: string | null; fromBody: b
   while ((m = articleRe.exec(html)) !== null) {
     articles.push(m[1]);
   }
-  if (articles.length > 0) return { content: articles.join('\n\n'), fromBody: false };
+  if (articles.length > 0) return { content: articles.join('\n\n'), needsChromStrip: false };
 
   // role="main" — match the opening tag that carries the attribute, then
   // capture until the corresponding closing tag (greedy on the tag name)
   const roleMatch = html.match(/<(\w+)[^>]*\brole="main"[^>]*>([\s\S]*?)<\/\1>/i);
-  if (roleMatch) return { content: roleMatch[2], fromBody: false };
+  if (roleMatch) return { content: roleMatch[2], needsChromStrip: false };
 
   // <body> fallback — still contains <header>/<footer> wrappers
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  if (bodyMatch) return { content: bodyMatch[1], fromBody: true };
+  if (bodyMatch) return { content: bodyMatch[1], needsChromStrip: true };
 
-  return { content: null, fromBody: false };
+  return { content: null, needsChromStrip: false };
 }
 
 /** Decode common HTML entities. */

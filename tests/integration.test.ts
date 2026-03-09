@@ -56,67 +56,61 @@ describe('normal browser request', () => {
 });
 
 describe('Accept: text/markdown', () => {
-  it('returns Markdown for /', async () => {
-    const res = await get('/', { accept: 'text/markdown' });
-    expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toContain('text/markdown');
-    const body = await res.text();
-    expect(body).toContain('# Astro Markdown for Agents');
-    expect(body).not.toMatch(/<[a-z]/i); // no leftover HTML tags
+  // Fetch shared responses once for all /about assertions.
+  let rootRes: Response, aboutRes: Response;
+  let rootBody: string, aboutBody: string;
+
+  beforeAll(async () => {
+    [rootRes, aboutRes] = await Promise.all([
+      get('/', { accept: 'text/markdown' }),
+      get('/about', { accept: 'text/markdown' }),
+    ]);
+    [rootBody, aboutBody] = await Promise.all([rootRes.text(), aboutRes.text()]);
   });
 
-  it('returns Markdown for /about', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
-    expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toContain('text/markdown');
-    const body = await res.text();
-    expect(body).toContain('# About');
+  it('returns Markdown for /', () => {
+    expect(rootRes.status).toBe(200);
+    expect(rootRes.headers.get('content-type')).toContain('text/markdown');
+    expect(rootBody).toContain('# Astro Markdown for Agents');
+    expect(rootBody).not.toMatch(/<[a-z]/i); // no leftover HTML tags
+  });
+
+  it('returns Markdown for /about', () => {
+    expect(aboutRes.status).toBe(200);
+    expect(aboutRes.headers.get('content-type')).toContain('text/markdown');
+    expect(aboutBody).toContain('# About');
     // The page intentionally mentions tag names as text content (e.g. "<script>")
     // inside code spans — strip those out before checking for stray HTML tags.
-    const withoutCodeSpans = body.replace(/`[^`]*`/g, '');
+    const withoutCodeSpans = aboutBody.replace(/`[^`]*`/g, '');
     expect(withoutCodeSpans).not.toMatch(/<[a-z]/i);
   });
 
-  it('sets a Vary header', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
+  it('sets a Vary header', () => {
     // Astro dev server may append its own Vary values; verify ours are present.
-    const vary = res.headers.get('vary') ?? '';
-    expect(vary).not.toBe('');
+    expect(aboutRes.headers.get('vary') ?? '').not.toBe('');
   });
 
-  it('sets x-original-content-type', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
-    expect(res.headers.get('x-original-content-type')).toContain('text/html');
+  it('sets x-original-content-type', () => {
+    expect(aboutRes.headers.get('x-original-content-type')).toContain('text/html');
   });
 
-  it('does not include nav links in Markdown output', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
-    const body = await res.text();
-    // The <nav> block contains "Home", "About", "Blog" as bare link text.
-    // After stripping the nav the only remaining "About" should be the heading.
-    const lines = body.split('\n').filter((l) => l.trim() !== '');
-    const navLine = lines.find((l) => /^\[Home\]/.test(l));
-    expect(navLine).toBeUndefined();
+  it('does not include nav links in Markdown output', () => {
+    const lines = aboutBody.split('\n').filter((l) => l.trim() !== '');
+    expect(lines.find((l) => /^\[Home\]/.test(l))).toBeUndefined();
   });
 
-  it('does not include footer text in Markdown output', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
-    const body = await res.text();
-    expect(body).not.toContain('Built with');
+  it('does not include footer text in Markdown output', () => {
+    expect(aboutBody).not.toContain('Built with');
   });
 
-  it('preserves code blocks from /about', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
-    const body = await res.text();
-    expect(body).toContain('```');
-    expect(body).toContain('markdownForAgents');
+  it('preserves code blocks from /about', () => {
+    expect(aboutBody).toContain('```');
+    expect(aboutBody).toContain('markdownForAgents');
   });
 
-  it('preserves ordered list items from /about', async () => {
-    const res = await get('/about', { accept: 'text/markdown' });
-    const body = await res.text();
-    expect(body).toContain('1.');
-    expect(body).toContain('2.');
+  it('preserves ordered list items from /about', () => {
+    expect(aboutBody).toContain('1.');
+    expect(aboutBody).toContain('2.');
   });
 });
 
