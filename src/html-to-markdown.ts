@@ -1,8 +1,15 @@
-// Heading regexes hoisted so they are compiled once, not per htmlToMarkdown call.
+// Regexes hoisted so they are compiled once, not per htmlToMarkdown call.
 const HEADING_RE: RegExp[] = Array.from(
   { length: 7 },
   (_, level) => new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi'),
 );
+
+// Inline formatting patterns shared between the main pipeline and inlineToMarkdown.
+const INLINE_CODE_RE = /<code[^>]*>([\s\S]*?)<\/code>/gi;
+const BOLD_RE = /<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi;
+const ITALIC_RE = /<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi;
+const STRIKE_RE = /<(?:s|del|strike)[^>]*>([\s\S]*?)<\/(?:s|del|strike)>/gi;
+const LINK_RE = /<a[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
 
 /**
  * Converts an HTML string to Markdown.
@@ -146,16 +153,16 @@ export function htmlToMarkdown(html: string): string {
   });
 
   // ── 7. Inline elements ────────────────────────────────────────────────────
-  md = md.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
-  md = md.replace(/<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi, '*$1*');
-  md = md.replace(/<(?:s|del|strike)[^>]*>([\s\S]*?)<\/(?:s|del|strike)>/gi, '~~$1~~');
+  md = md.replace(BOLD_RE, '**$1**');
+  md = md.replace(ITALIC_RE, '*$1*');
+  md = md.replace(STRIKE_RE, '~~$1~~');
   // Keep entities encoded — step 11 decodes everything uniformly at the end.
-  md = md.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => '`' + inner + '`');
+  md = md.replace(INLINE_CODE_RE, (_m, inner) => '`' + inner + '`');
 
   // ── 8. Links and images ───────────────────────────────────────────────────
   // Use a capture group for the quote character so both " and ' are matched.
   md = md.replace(
-    /<a[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi,
+    LINK_RE,
     (_m, _q, href, text) => `[${stripTags(text).trim()}](${href})`,
   );
   md = md.replace(
@@ -213,11 +220,11 @@ function inlineToMarkdown(html: string): string {
   let s = html;
   // Keep entities encoded inside code spans so that step 10 (stripTags) cannot
   // mistake decoded angle brackets for HTML tags. Step 11 decodes everything.
-  s = s.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_m, inner) => '`' + inner + '`');
-  s = s.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
-  s = s.replace(/<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi, '*$1*');
-  s = s.replace(/<(?:s|del|strike)[^>]*>([\s\S]*?)<\/(?:s|del|strike)>/gi, '~~$1~~');
-  s = s.replace(/<a[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, (_m, _q, href, text) => `[${stripTags(text).trim()}](${href})`);
+  s = s.replace(INLINE_CODE_RE, (_m, inner) => '`' + inner + '`');
+  s = s.replace(BOLD_RE, '**$1**');
+  s = s.replace(ITALIC_RE, '*$1*');
+  s = s.replace(STRIKE_RE, '~~$1~~');
+  s = s.replace(LINK_RE, (_m, _q, href, text) => `[${stripTags(text).trim()}](${href})`);
   s = s.replace(/<br\s*\/?>/gi, ' ');
   return stripTags(s);
 }
@@ -260,15 +267,17 @@ function extractMainContent(html: string): { content: string | null; needsChromS
 }
 
 /** Decode common HTML entities. */
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'", nbsp: ' ',
+};
+
 function decodeEntities(str: string): string {
-  return str
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#(\d+);/g, (_m, code) => String.fromCharCode(Number(code)))
-    .replace(/&#x([0-9a-f]+);/gi, (_m, hex) => String.fromCharCode(parseInt(hex, 16)));
+  return str.replace(/&(#x[0-9a-f]+|#\d+|[a-z#0-9]+);/gi, (_m, entity: string) => {
+    if (entity in NAMED_ENTITIES) return NAMED_ENTITIES[entity];
+    if (entity.startsWith('#x') || entity.startsWith('#X'))
+      return String.fromCharCode(parseInt(entity.slice(2), 16));
+    if (entity.startsWith('#'))
+      return String.fromCharCode(Number(entity.slice(1)));
+    return _m; // unknown entity — leave as-is
+  });
 }
