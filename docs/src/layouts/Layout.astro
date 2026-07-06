@@ -1,0 +1,76 @@
+---
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/astro-markdown-for-agents/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<div class="glow-bg"></div>
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--bg-color: #0b0c10;
+		--text-color: #c5c6c7;
+		--heading-color: #ffffff;
+		--primary-color: #66fcf1;
+		--secondary-color: #45a29e;
+		--accent-color: #7b2cbf;
+		--card-bg: rgba(31, 40, 51, 0.6);
+		--card-border: rgba(102, 252, 241, 0.1);
+	}
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	html,
+	body {
+		margin: 0;
+		width: 100%;
+		height: 100%;
+		font-family: 'Inter', sans-serif;
+		background-color: var(--bg-color);
+		color: var(--text-color);
+		overflow-x: hidden;
+	}
+	h1, h2, h3, h4 {
+		color: var(--heading-color);
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+	.glow-bg {
+		position: fixed;
+		top: -50%;
+		left: -50%;
+		width: 200%;
+		height: 200%;
+		background: radial-gradient(circle at 50% 50%, rgba(123, 44, 191, 0.15) 0%, rgba(11, 12, 16, 0) 50%);
+		z-index: -1;
+		pointer-events: none;
+	}
+	::selection {
+		background-color: var(--primary-color);
+		color: var(--bg-color);
+	}
+	a {
+		color: var(--primary-color);
+		text-decoration: none;
+		transition: color 0.2s ease;
+	}
+	a:hover {
+		color: var(--secondary-color);
+	}
+</style>

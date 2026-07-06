@@ -37,6 +37,32 @@ export default defineConfig({
 
 The integration works with any Astro adapter, not just Cloudflare.
 
+## Configuration
+
+You can optionally configure the integration:
+
+```js
+export default defineConfig({
+  integrations: [
+    markdownForAgents({
+      // Add custom User-Agent strings to detect
+      additionalAgents: ['MyCustomBot'],
+      
+      // Disable automatic llms.txt generation during build (enabled by default)
+      generateLlmsTxt: false,
+      
+      // Customise the llms.txt header
+      siteTitle: 'My Project Docs',
+      siteDescription: 'Documentation tailored for AI agents.'
+    })
+  ],
+});
+```
+
+### Automatic `llms.txt` Generation
+
+During static builds (`astro build`), this integration automatically generates an [`llms.txt` file](https://llmstxt.org/) at the root of your output directory. This file acts as a standard map for AI agents, listing all the generated Markdown versions of your pages.
+
 ## Testing
 
 ```bash
@@ -66,12 +92,14 @@ That is roughly an **80% reduction**.
 The following User-Agent strings are detected out of the box:
 
 - `anthropic-ai` / `Claude-Web` / `ClaudeBot`
-- `GPTBot` / `ChatGPT-User`
+- `GPTBot` / `ChatGPT-User` / `OAI-SearchBot`
 - `Google-Extended`
 - `cohere-ai`
-- `PerplexityBot`
+- `PerplexityBot` / `Perplexity-User`
 - `YouBot`
 - `Applebot-Extended`
+- `Amazonbot`
+- `Meta-ExternalAgent`
 - `Bytespider`, `CCBot`, `DataForSeoBot`, `FacebookBot`, `facebookexternalhit`
 - `ImagesiftBot`, `Omgilibot`, `Omgili`, `PiplBot`, `Seekr`
 - `Timpibot`, `VelenPublicWebCrawler`, `WebzIO-Extended`
