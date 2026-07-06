@@ -1,31 +1,37 @@
 {
   "name": "@puralex/astro-markdown-for-agents",
   "version": "0.3.0",
-  "description": "Astro integration that serves Markdown to AI agents — Cloudflare free plan compatible",
+  "description": "Markdown for Agents integration for Astro with text/markdown negotiation, static Markdown files, and llms.txt",
   "type": "module",
-  "main": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./index.ts",
-      "default": "./index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./middleware": {
-      "import": "./src/middleware.ts",
-      "default": "./src/middleware.ts"
+      "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.js",
+      "default": "./dist/middleware.js"
     }
   },
   "files": [
-    "src",
-    "index.ts",
+    "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "pretest": "pnpm --filter astro-markdown-for-agents-example install",
-    "test": "vitest run"
+    "build": "tsup index.ts src/middleware.ts --format esm --dts --clean --target node20",
+    "check": "tsc --noEmit",
+    "pretest": "pnpm build",
+    "test": "vitest run",
+    "prepack": "pnpm build"
   },
   "engines": {
-    "node": ">=22.12.0",
+    "node": ">=20.0.0",
     "pnpm": ">=10.0.0"
   },
   "packageManager": "pnpm@10.29.3",
@@ -34,9 +40,14 @@
     "astro",
     "astro-integration",
     "markdown",
+    "markdown-for-agents",
+    "content-negotiation",
+    "text-markdown",
+    "html-to-markdown",
     "ai",
     "agents",
     "cloudflare",
+    "starlight",
     "llm",
     "llms-txt"
   ],
@@ -52,7 +63,13 @@
     "@astrojs/node": "^11.0.2",
     "@types/node": "^25.3.0",
     "astro": "^7.0.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.0.0",
     "vitest": "^3.2.0"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "sideEffects": false
 }

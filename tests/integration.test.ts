@@ -37,7 +37,7 @@ async function get(pathname: string, headers: Record<string, string> = {}) {
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
-describe.skip('normal browser request', () => {
+describe('normal browser request', () => {
   it('returns HTML for /', async () => {
     const res = await get('/');
     expect(res.status).toBe(200);
@@ -51,7 +51,7 @@ describe.skip('normal browser request', () => {
   });
 });
 
-describe.skip('Accept: text/markdown', () => {
+describe('Accept: text/markdown', () => {
   // Fetch shared responses once for all /about assertions.
   let rootRes: Response, aboutRes: Response;
   let rootBody: string, aboutBody: string;
@@ -110,7 +110,7 @@ describe.skip('Accept: text/markdown', () => {
   });
 });
 
-describe.skip('User-Agent: GPTBot', () => {
+describe('User-Agent: GPTBot', () => {
   it('returns Markdown for / when UA is GPTBot', async () => {
     const res = await get('/', { 'user-agent': 'Mozilla/5.0 (compatible; GPTBot/1.1)' });
     expect(res.status).toBe(200);
@@ -123,7 +123,7 @@ describe.skip('User-Agent: GPTBot', () => {
   });
 });
 
-describe.skip('non-HTML resources are passed through unchanged', () => {
+describe('non-HTML resources are passed through unchanged', () => {
   it('serves a static CSS file as text/css even with Accept: text/markdown', async () => {
     const res = await get('/style.css', { accept: 'text/markdown' });
     expect(res.status).toBe(200);

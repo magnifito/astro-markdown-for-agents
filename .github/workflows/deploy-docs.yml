@@ -23,25 +23,26 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./docs
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v4
         
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+          
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: './docs/package-lock.json'
+          cache: 'pnpm'
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
         
       - name: Build Astro site
-        run: npm run build
+        run: pnpm --filter docs build
         
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

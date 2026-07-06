@@ -42,7 +42,7 @@ const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID;
  * // astro.config.mjs
  * import { defineConfig } from 'astro/config';
  * import cloudflare from '@astrojs/cloudflare';
- * import markdownForAgents from 'astro-markdown-for-agents';
+ * import markdownForAgents from '@puralex/astro-markdown-for-agents';
  *
  * export default defineConfig({
  *   adapter: cloudflare(),
