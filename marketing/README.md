@@ -10,7 +10,7 @@ Do not distribute until:
 - `pnpm test`
 - `pnpm docs:build`
 - `pnpm --filter astro-markdown-for-agents-example build`
-- `npm pack --dry-run`
+- `pnpm pack --dry-run`
 - Documentation deployment verified
 - npm `0.3.0` verified
 

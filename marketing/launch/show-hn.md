@@ -16,7 +16,7 @@ curl -H "Accept: text/markdown" https://example.com/docs
 
 For static sites, it writes a matching `.md` file per generated HTML page and creates `llms.txt`. This keeps GitHub Pages and other static hosts useful without pretending they can run request middleware.
 
-The converter has zero runtime dependencies. Package ships compiled ESM and TypeScript declarations. Current suite contains 86 converter/detection tests and 13 real middleware tests.
+The converter has zero runtime dependencies. Package ships compiled ESM and TypeScript declarations. Current suite contains 99 automated tests, including 13 real middleware tests.
 
 Live measured demo:
 
