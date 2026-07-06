@@ -1,76 +1,115 @@
 ---
-const { title } = Astro.props;
+import '../styles/global.css';
+
+interface Props {
+	title?: string;
+	description?: string;
+	article?: boolean;
+	frontmatter?: {
+		title?: string;
+		description?: string;
+		article?: boolean;
+	};
+}
+
+const frontmatter = Astro.props.frontmatter ?? {};
+const title = Astro.props.title ?? frontmatter.title ?? 'Markdown for Agents for Astro';
+const description =
+	Astro.props.description
+	?? frontmatter.description
+	?? 'Serve clean Markdown and generate llms.txt from Astro sites—static or SSR.';
+const article = Astro.props.article ?? frontmatter.article ?? false;
+const base = import.meta.env.BASE_URL;
+const canonical = Astro.url.toString();
+const plausibleDomain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
+const analyticsScript = `
+window.plausible = window.plausible || function () {
+	(window.plausible.q = window.plausible.q || []).push(arguments);
+};
+document.addEventListener('click', function (event) {
+	var target = event.target.closest('[data-track]');
+	if (!target) return;
+	window.plausible('CTA Click', { props: { cta: target.dataset.track } });
+});
+`;
+
+const href = (path = '') => `${base}${path}`.replace(/\/{2,}/g, '/');
+
+const softwareJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'SoftwareSourceCode',
+	name: 'Markdown for Agents for Astro',
+	codeRepository: 'https://github.com/magnifito/astro-markdown-for-agents',
+	programmingLanguage: 'TypeScript',
+	runtimePlatform: 'Astro',
+	license: 'https://www.gnu.org/licenses/gpl-3.0.en.html',
+	description,
+};
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/astro-markdown-for-agents/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#07110f" />
 		<meta name="generator" content={Astro.generator} />
+		<link rel="canonical" href={canonical} />
+		<link rel="icon" type="image/svg+xml" href={href('favicon.svg')} />
+		<link rel="alternate" type="text/markdown" href={`${Astro.url.pathname.replace(/\/$/, '/index')}.md`} />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:site_name" content="Markdown for Agents for Astro" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
 		<title>{title}</title>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+		<script type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+		{plausibleDomain && (
+			<script
+				defer
+				data-domain={plausibleDomain}
+				src="https://plausible.io/js/script.js"
+			></script>
+		)}
+		{plausibleDomain && <script is:inline set:html={analyticsScript} />}
 	</head>
 	<body>
-		<div class="glow-bg"></div>
-		<slot />
+		<a class="skip-link" href="#main-content">Skip to content</a>
+		<header class="site-header">
+			<a class="brand" href={href()} aria-label="Markdown for Agents for Astro home">
+				<span class="brand-mark" aria-hidden="true">M<span>↓</span></span>
+				<span>Markdown for Agents</span>
+			</a>
+			<nav aria-label="Primary navigation">
+				<a href={href('#how-it-works')}>How it works</a>
+				<a href={href('demo/')}>Demo</a>
+				<a href={href('guides/')}>Guides</a>
+				<a href="https://github.com/magnifito/astro-markdown-for-agents">GitHub</a>
+			</nav>
+		</header>
+
+		<div class:list={['page-content', { article }]}>
+			<slot />
+		</div>
+
+		<footer class="site-footer">
+			<div>
+				<a class="brand footer-brand" href={href()}>
+					<span class="brand-mark" aria-hidden="true">M<span>↓</span></span>
+					<span>Markdown for Agents for Astro</span>
+				</a>
+				<p>Open-source Astro integration. GPL-3.0 licensed.</p>
+			</div>
+			<div class="footer-links">
+				<a href="https://www.npmjs.com/package/@puralex/astro-markdown-for-agents">npm</a>
+				<a href="https://astro.build/integrations/?search=markdown-for-agents">Astro directory</a>
+				<a href={href('llms.txt')}>llms.txt</a>
+				<a href={href('index.md')}>Markdown</a>
+			</div>
+		</footer>
 	</body>
 </html>
-
-<style is:global>
-	:root {
-		--bg-color: #0b0c10;
-		--text-color: #c5c6c7;
-		--heading-color: #ffffff;
-		--primary-color: #66fcf1;
-		--secondary-color: #45a29e;
-		--accent-color: #7b2cbf;
-		--card-bg: rgba(31, 40, 51, 0.6);
-		--card-border: rgba(102, 252, 241, 0.1);
-	}
-	* {
-		box-sizing: border-box;
-		margin: 0;
-		padding: 0;
-	}
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-		font-family: 'Inter', sans-serif;
-		background-color: var(--bg-color);
-		color: var(--text-color);
-		overflow-x: hidden;
-	}
-	h1, h2, h3, h4 {
-		color: var(--heading-color);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-	}
-	.glow-bg {
-		position: fixed;
-		top: -50%;
-		left: -50%;
-		width: 200%;
-		height: 200%;
-		background: radial-gradient(circle at 50% 50%, rgba(123, 44, 191, 0.15) 0%, rgba(11, 12, 16, 0) 50%);
-		z-index: -1;
-		pointer-events: none;
-	}
-	::selection {
-		background-color: var(--primary-color);
-		color: var(--bg-color);
-	}
-	a {
-		color: var(--primary-color);
-		text-decoration: none;
-		transition: color 0.2s ease;
-	}
-	a:hover {
-		color: var(--secondary-color);
-	}
-</style>

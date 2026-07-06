@@ -1,115 +1,175 @@
-# astro-markdown-for-agents
+# Markdown for Agents for Astro
 
-An Astro integration that automatically serves **Markdown** to AI agents — including on Cloudflare's **free plan**.
+Serve clean Markdown and generate `llms.txt` from Astro sites—static or SSR, including Cloudflare Free.
 
-Cloudflare's built-in [Markdown for Agents](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/) feature (launched February 2026) converts HTML pages to Markdown when AI agents request them, significantly reducing token usage. However, it requires a paid Cloudflare plan. This integration replicates that behaviour inside Astro's middleware layer, so any Astro site can benefit regardless of hosting plan.
+[![npm version](https://img.shields.io/npm/v/%40puralex%2Fastro-markdown-for-agents)](https://www.npmjs.com/package/@puralex/astro-markdown-for-agents)
+[![npm downloads](https://img.shields.io/npm/dm/%40puralex%2Fastro-markdown-for-agents)](https://www.npmjs.com/package/@puralex/astro-markdown-for-agents)
+[![CI](https://github.com/magnifito/astro-markdown-for-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/magnifito/astro-markdown-for-agents/actions/workflows/ci.yml)
+[![Astro 4–7](https://img.shields.io/badge/Astro-4%E2%80%937-BC52EE)](https://astro.build)
+[![GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-8cf2b0)](./LICENSE)
 
-## How It Works
+**[Documentation](https://magnifito.github.io/astro-markdown-for-agents/)** ·
+**[Live converter demo](https://magnifito.github.io/astro-markdown-for-agents/demo/)** ·
+**[Astro integration directory](https://astro.build/integrations/?search=markdown-for-agents)**
 
-When a request arrives with either:
+## What it does
 
-- an `Accept: text/markdown` header, or
-- a `User-Agent` that matches a known AI crawler (GPTBot, ClaudeBot, PerplexityBot, etc.)
+- Returns `text/markdown` when a runtime request sends `Accept: text/markdown`.
+- Generates a parallel `.md` file for every page in static builds.
+- Generates `llms.txt` with links to machine-readable pages.
+- Detects known AI crawler User-Agents, with custom-agent support.
+- Preserves normal HTML, JSON, CSS, image, and browser responses.
+- Runs on edge runtimes with zero runtime package dependencies.
 
-…the middleware intercepts the normal HTML response, converts it to clean Markdown, and returns it with `Content-Type: text/markdown`.
-
-All other requests are passed through unchanged.
-
-## Installation
+## Install
 
 ```bash
-npm install astro-markdown-for-agents
+pnpm add @puralex/astro-markdown-for-agents
 ```
-
-## Usage
 
 ```js
 // astro.config.mjs
 import { defineConfig } from 'astro/config';
-import cloudflare from '@astrojs/cloudflare';
-import markdownForAgents from 'astro-markdown-for-agents';
+import markdownForAgents from '@puralex/astro-markdown-for-agents';
 
 export default defineConfig({
+  integrations: [markdownForAgents()],
+});
+```
+
+Run `astro build`. Output includes HTML, matching Markdown files, and `llms.txt`.
+
+## Choose a delivery mode
+
+| Astro deployment | Markdown delivery | Required setup |
+|---|---|---|
+| Server-rendered | Same URL via `Accept: text/markdown` | Astro server adapter |
+| Static | Direct `.md` URLs generated at build | None |
+| Static with same-URL negotiation | Generated `.md` files | Host/CDN rewrite |
+
+Static hosts cannot run Astro middleware. GitHub Pages, for example, serves `/index.md` directly but does not inspect `Accept` headers.
+
+### Runtime negotiation
+
+Use server output and any compatible Astro adapter:
+
+```js
+import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
+import markdownForAgents from '@puralex/astro-markdown-for-agents';
+
+export default defineConfig({
+  output: 'server',
   adapter: cloudflare(),
   integrations: [markdownForAgents()],
 });
 ```
 
-The integration works with any Astro adapter, not just Cloudflare.
+```bash
+# Markdown
+curl -i -H "Accept: text/markdown" http://localhost:4321/
+
+# Normal HTML
+curl -i http://localhost:4321/
+```
+
+Runtime Markdown responses include:
+
+```http
+Content-Type: text/markdown; charset=utf-8
+Vary: Accept, User-Agent
+```
+
+### Static output
+
+For a normal static build:
+
+```text
+dist/
+├── index.html
+├── index.md
+├── about/
+│   ├── index.html
+│   └── index.md
+└── llms.txt
+```
+
+Agents can request `/index.md`, `/about/index.md`, or discover pages through `/llms.txt`.
 
 ## Configuration
 
-You can optionally configure the integration:
-
 ```js
-export default defineConfig({
-  integrations: [
-    markdownForAgents({
-      // Add custom User-Agent strings to detect
-      additionalAgents: ['MyCustomBot'],
-      
-      // Disable automatic llms.txt generation during build (enabled by default)
-      generateLlmsTxt: false,
-      
-      // Customise the llms.txt header
-      siteTitle: 'My Project Docs',
-      siteDescription: 'Documentation tailored for AI agents.'
-    })
-  ],
+markdownForAgents({
+  // Add custom User-Agent substrings.
+  additionalAgents: ['MyInternalCrawler'],
+
+  // Generate llms.txt during static builds. Default: true.
+  generateLlmsTxt: true,
+
+  // llms.txt metadata.
+  siteTitle: 'Product Documentation',
+  siteDescription: 'API, deployment, and operations guides.',
 });
 ```
 
-### Automatic `llms.txt` Generation
+## Supported agents
 
-During static builds (`astro build`), this integration automatically generates an [`llms.txt` file](https://llmstxt.org/) at the root of your output directory. This file acts as a standard map for AI agents, listing all the generated Markdown versions of your pages.
+Built-in matching includes:
 
-## Testing
+- OpenAI: `GPTBot`, `ChatGPT-User`, `OAI-SearchBot`
+- Anthropic: `anthropic-ai`, `Claude-Web`, `ClaudeBot`
+- Perplexity: `PerplexityBot`, `Perplexity-User`
+- Google, Apple, Amazon, Meta, Cohere, Common Crawl, and other known crawlers
 
-```bash
-# Should return text/markdown
-curl -H "Accept: text/markdown" http://localhost:4321/
+Explicit `Accept: text/markdown` negotiation is preferred when the client supports it. User-Agent detection handles crawlers that do not send that header.
 
-# Should return normal HTML
-curl http://localhost:4321/
+## Converter API
 
-# Simulate a known AI crawler
-curl -H "User-Agent: GPTBot/1.0" http://localhost:4321/
+The zero-dependency converter is also available directly:
+
+```ts
+import { htmlToMarkdown } from '@puralex/astro-markdown-for-agents/html-to-markdown';
+
+const markdown = htmlToMarkdown('<main><h1>Hello</h1><p>Clean output.</p></main>');
 ```
 
-## Token Savings
+## Compatibility
 
-Serving Markdown instead of HTML dramatically reduces the number of tokens an AI model needs to process. For example, a typical documentation page:
+| Astro | Node |
+|---|---|
+| 4–5 | Node 20+ |
+| 6–7 | Node 22.12+ |
 
-| Format   | Tokens  |
-|----------|---------|
-| HTML     | ~16,000 |
-| Markdown | ~3,100  |
+Package output is compiled JavaScript with TypeScript declarations. CI runs unit tests, real middleware integration tests, example builds, and package checks.
 
-That is roughly an **80% reduction**.
+## Why not Cloudflare's managed feature?
 
-## Supported AI Agents
+Cloudflare's Markdown for Agents provides managed runtime conversion on Pro, Business, and Enterprise plans. This integration moves conversion into Astro:
 
-The following User-Agent strings are detected out of the box:
+- Server-rendered sites convert through Astro middleware.
+- Static sites generate Markdown during the Astro build.
+- Cloudflare Free users can use either mode without enabling the paid managed feature.
 
-- `anthropic-ai` / `Claude-Web` / `ClaudeBot`
-- `GPTBot` / `ChatGPT-User` / `OAI-SearchBot`
-- `Google-Extended`
-- `cohere-ai`
-- `PerplexityBot` / `Perplexity-User`
-- `YouBot`
-- `Applebot-Extended`
-- `Amazonbot`
-- `Meta-ExternalAgent`
-- `Bytespider`, `CCBot`, `DataForSeoBot`, `FacebookBot`, `facebookexternalhit`
-- `ImagesiftBot`, `Omgilibot`, `Omgili`, `PiplBot`, `Seekr`
-- `Timpibot`, `VelenPublicWebCrawler`, `WebzIO-Extended`
+See the [Cloudflare Free setup guide](https://magnifito.github.io/astro-markdown-for-agents/guides/cloudflare-free-plan/).
 
-Any request sending `Accept: text/markdown` is also matched, regardless of User-Agent.
+## Development
 
-## Edge Runtime Compatibility
+```bash
+pnpm install
+pnpm check
+pnpm test
+pnpm --filter astro-markdown-for-agents-example build
+pnpm docs:build
+```
 
-The converter is implemented with pure regex — no DOM, no Node.js APIs. It runs natively in Cloudflare Workers, Deno Deploy, and any other edge runtime.
+Current suite: 86 unit tests and 13 end-to-end middleware tests.
+
+## Early adopter program
+
+Running public Astro documentation? [Submit a pilot site](https://github.com/magnifito/astro-markdown-for-agents/issues/new?template=pilot.yml) for setup help, a payload review, and inclusion in the future “Used by” section.
+
+No users or testimonials are displayed without permission.
 
 ## License
 
-GPL-3.0 — see [LICENSE](./LICENSE).
+GPL-3.0. See [LICENSE](./LICENSE).

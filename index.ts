@@ -1,6 +1,5 @@
 import type { AstroIntegration } from 'astro';
 import fs from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { htmlToMarkdown } from './src/html-to-markdown.ts';
 
 export interface MarkdownForAgentsOptions {
@@ -59,10 +58,14 @@ export function markdownForAgents(
     siteTitle = 'Website Documentation',
     siteDescription = 'Markdown documentation for AI agents.',
   } = options;
+  let basePath = '/';
 
   return {
     name: 'astro-markdown-for-agents',
     hooks: {
+      'astro:config:done': ({ config }) => {
+        basePath = config.base.endsWith('/') ? config.base : `${config.base}/`;
+      },
       'astro:config:setup': ({ addMiddleware, updateConfig, logger }) => {
         logger.info('Registering markdown-for-agents middleware');
 
@@ -95,7 +98,11 @@ export function markdownForAgents(
       },
       'astro:build:done': async ({ dir, pages, logger }) => {
         // Find all pages that generated an HTML file
-        const htmlPages = pages.filter((page) => page.pathname.endsWith('/') || page.pathname.endsWith('.html') || !page.pathname.includes('.'));
+        const htmlPages = pages.filter((page) => {
+          const cleanPath = page.pathname.replace(/^\/|\/$/g, '');
+          return cleanPath !== '404'
+            && (page.pathname.endsWith('/') || page.pathname.endsWith('.html') || !page.pathname.includes('.'));
+        });
 
         if (htmlPages.length === 0) return;
 
@@ -143,7 +150,7 @@ export function markdownForAgents(
             const relPath = htmlFilePath.href.substring(dir.href.length).replace(/\.html$/, '.md');
             generatedMdWebPaths.push({
               title: page.pathname || '/',
-              path: `/${relPath}`
+              path: `${basePath}${relPath}`.replace(/\/{2,}/g, '/')
             });
           } catch (err) {
             logger.error(`Failed to generate Markdown for ${page.pathname}: ${err instanceof Error ? err.message : String(err)}`);

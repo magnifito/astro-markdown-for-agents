@@ -1,33 +1,35 @@
 ---
 layout: ../layouts/Layout.astro
-title: About the Project
+title: About Markdown for Agents for Astro
+description: Project goals, delivery model, and current scope.
+article: true
 ---
 
-# About Astro Markdown for Agents
+<main id="main-content" class="article">
 
-Welcome to the **About** page! This page is written entirely in Markdown, which means when an AI agent requests this page with `Accept: text/markdown`, it receives this exact raw markdown content instead of the parsed HTML.
+# About the project
 
-## Why This Matters
+Markdown for Agents for Astro is an open-source Astro integration maintained at [`magnifito/astro-markdown-for-agents`](https://github.com/magnifito/astro-markdown-for-agents).
 
-1. **Efficiency**: AI agents (like Claude, ChatGPT, Perplexity) process Markdown faster and more accurately than nested HTML.
-2. **Cost Savings**: If you run your own crawler or process web pages using LLMs, you pay by the token. By removing HTML boilerplate, you save up to 80% on tokens.
-3. **Accuracy**: You eliminate the risk of an LLM incorrectly parsing complex HTML, nested divs, and hidden navigation elements. 
+It solves one bounded problem: expose rendered Astro content in a cleaner representation for agents, crawlers, and retrieval pipelines.
 
-## Integration Details
+## Current scope
 
-The `astro-markdown-for-agents` plugin uses an Astro Middleware to intercept incoming requests and checks either:
-- The `Accept` header for `text/markdown`.
-- The `User-Agent` to see if it matches a known crawler (like `GPTBot`, `ClaudeBot`, `Amazonbot`, etc.).
+- Runtime `Accept: text/markdown` negotiation for server-rendered sites.
+- Optional AI User-Agent detection.
+- Static `.md` generation during Astro builds.
+- Automatic `llms.txt` generation.
+- Edge-compatible HTML-to-Markdown conversion.
+- No runtime package dependencies.
 
-If either matches, the plugin bypasses the final HTML rendering step and serves the raw markdown source of the page!
+## Delivery model
 
-```typescript
-// It's this simple:
-import markdownForAgents from '@puralex/astro-markdown-for-agents';
+Runtime Astro adapters can inspect request headers and return Markdown at the original URL. Static hosting cannot run middleware, so static builds publish direct `.md` URLs instead. Host-level rewrites remain optional and platform-specific.
 
-export default defineConfig({
-  integrations: [markdownForAgents()]
-});
-```
+The project does not claim that Markdown automatically improves search ranking or agent citations. It provides cleaner transport and discovery; content quality still matters.
 
-Enjoy building for the Agentic Era!
+## License
+
+Project source is available under GPL-3.0.
+
+</main>

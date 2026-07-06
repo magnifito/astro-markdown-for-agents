@@ -15,6 +15,11 @@
       "types": "./dist/middleware.d.ts",
       "import": "./dist/middleware.js",
       "default": "./dist/middleware.js"
+    },
+    "./html-to-markdown": {
+      "types": "./dist/html-to-markdown.d.ts",
+      "import": "./dist/html-to-markdown.js",
+      "default": "./dist/html-to-markdown.js"
     }
   },
   "files": [
@@ -24,8 +29,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup index.ts src/middleware.ts --format esm --dts --clean --target node20",
+    "build": "tsup",
     "check": "tsc --noEmit",
+    "docs:build": "pnpm build && pnpm --filter astro-markdown-for-agents-docs build",
     "pretest": "pnpm build",
     "test": "vitest run",
     "prepack": "pnpm build"
