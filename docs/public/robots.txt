@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://magnifito.github.io/astro-markdown-for-agents/sitemap-index.xml

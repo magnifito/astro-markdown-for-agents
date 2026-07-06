@@ -3,7 +3,8 @@
  * middleware returns Markdown when requested via Accept header or User-Agent.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { dev } from 'astro';
+import { fork, type ChildProcess } from 'node:child_process';
+import { request } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -12,31 +13,79 @@ const EXAMPLE_ROOT = path.resolve(
   '../../examples/basic',
 );
 
-let devServer: Awaited<ReturnType<typeof dev>>;
+let devServer: ChildProcess;
 let base: string;
 
 beforeAll(async () => {
-  devServer = await dev({
-    root: EXAMPLE_ROOT,
-    logLevel: 'silent',
-    // Force server-side rendering so the middleware runs for every request.
-    // The example defaults to 'static', which marks all pages as prerendered
-    // and bypasses the middleware's isPrerendered guard.
-    output: 'server',
+  const helper = fileURLToPath(new URL('./fixtures/dev-server.mjs', import.meta.url));
+  const env = {
+    ...process.env,
+    NODE_ENV: 'development',
+  };
+  for (const key of Object.keys(env)) {
+    if (key.startsWith('VITEST') || key === 'TEST') {
+      delete env[key];
+    }
+  }
+
+  devServer = fork(helper, [EXAMPLE_ROOT], {
+    cwd: EXAMPLE_ROOT,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
   });
-  const addr = devServer.address;
+
+  const errors: string[] = [];
+  devServer.stderr?.on('data', (chunk) => errors.push(String(chunk)));
+
+  const addr = await new Promise<{ address: string; port: number }>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Astro dev server did not start: ${errors.join('')}`));
+    }, 20_000);
+
+    devServer.once('error', reject);
+    devServer.on('message', (message) => {
+      if (
+        typeof message === 'object'
+        && message !== null
+        && 'type' in message
+        && message.type === 'ready'
+        && 'address' in message
+      ) {
+        clearTimeout(timeout);
+        resolve(message.address as { address: string; port: number });
+      }
+    });
+  });
+
   const host = addr.address.includes(':') ? `[${addr.address}]` : addr.address;
   base = `http://${host}:${addr.port}`;
 }, 30_000);
 
 afterAll(async () => {
-  await devServer.stop();
+  if (!devServer?.connected) return;
+  await new Promise<void>((resolve) => {
+    devServer.once('exit', () => resolve());
+    devServer.send({ type: 'shutdown' });
+  });
 });
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 async function get(pathname: string, headers: Record<string, string> = {}) {
-  return fetch(`${base}${pathname}`, { headers });
+  return new Promise<Response>((resolve, reject) => {
+    const req = request(`${base}${pathname}`, { headers }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      res.on('end', () => {
+        resolve(new Response(Buffer.concat(chunks), {
+          status: res.statusCode,
+          headers: res.headers as HeadersInit,
+        }));
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────

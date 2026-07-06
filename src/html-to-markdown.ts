@@ -85,20 +85,24 @@ export function htmlToMarkdown(html: string): string {
   // ── 6. Lists ──────────────────────────────────────────────────────────────
   // Ordered lists: wrap each <li> with index
   md = md.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_m, inner) => {
-    let i = 0;
-    const items = inner.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m2: string, item: string) => {
-      i++;
-      return `${i}. ${inlineToMarkdown(item).trim()}\n`;
-    });
-    return '\n' + items + '\n';
+    const items: string[] = [];
+    const itemRe = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+    let item: RegExpExecArray | null;
+    while ((item = itemRe.exec(inner)) !== null) {
+      items.push(`${items.length + 1}. ${inlineToMarkdown(item[1]).trim()}`);
+    }
+    return '\n' + items.join('\n') + '\n';
   });
 
   // Unordered lists
   md = md.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (_m, inner) => {
-    const items = inner.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m2: string, item: string) => {
-      return `- ${inlineToMarkdown(item).trim()}\n`;
-    });
-    return '\n' + items + '\n';
+    const items: string[] = [];
+    const itemRe = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+    let item: RegExpExecArray | null;
+    while ((item = itemRe.exec(inner)) !== null) {
+      items.push(`- ${inlineToMarkdown(item[1]).trim()}`);
+    }
+    return '\n' + items.join('\n') + '\n';
   });
 
   // Remaining stray <li> not inside a list wrapper
@@ -176,7 +180,12 @@ export function htmlToMarkdown(html: string): string {
   md = md.replace(/<img[^>]*src=(["'])(.*?)\1[^>]*\/?>/gi, (_m, _q, src) => `![](${src})`);
 
   // ── 9. Line breaks ────────────────────────────────────────────────────────
-  md = md.replace(/<br\s*\/?>/gi, '\n');
+  md = md.replace(/<br\b[^>]*\/?>/gi, '\n');
+  // Preserve boundaries between block-level containers before stripping tags.
+  md = md.replace(
+    /<\/?(?:address|article|details|dialog|div|fieldset|figcaption|figure|header|hgroup|main|section|summary)[^>]*>/gi,
+    '\n',
+  );
 
   // ── 10. Strip remaining HTML tags ─────────────────────────────────────────
   md = stripTags(md);
@@ -185,10 +194,7 @@ export function htmlToMarkdown(html: string): string {
   md = decodeEntities(md);
 
   // ── 12. Normalize whitespace ──────────────────────────────────────────────
-  md = md
-    .replace(/\r\n/g, '\n')      // normalise line endings
-    .replace(/\n{3,}/g, '\n\n')  // collapse 3+ blank lines → 2
-    .trim();
+  md = normalizeWhitespace(md);
 
   return md;
 }
@@ -225,8 +231,31 @@ function inlineToMarkdown(html: string): string {
   s = s.replace(ITALIC_RE, '*$1*');
   s = s.replace(STRIKE_RE, '~~$1~~');
   s = s.replace(LINK_RE, (_m, _q, href, text) => `[${stripTags(text).trim()}](${href})`);
-  s = s.replace(/<br\s*\/?>/gi, ' ');
+  s = s.replace(/<br\b[^>]*\/?>/gi, ' ');
   return stripTags(s);
+}
+
+/**
+ * Remove indentation inherited from formatted HTML while preserving leading
+ * whitespace inside fenced code blocks.
+ */
+function normalizeWhitespace(markdown: string): string {
+  let inFence = false;
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+
+  const normalized = lines.map((line) => {
+    if (line.trimStart().startsWith('```')) {
+      inFence = !inFence;
+      return line.trim();
+    }
+    if (inFence) return line.replace(/[ \t]+$/g, '');
+    return line.trim();
+  });
+
+  return normalized
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**

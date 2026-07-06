@@ -24,8 +24,8 @@ const publishedAt = '2026-02-24';
     <h2>Prerequisites</h2>
 
     <ul>
-      <li>An Astro project (v4 or v5)</li>
-      <li>Node.js 18 or later</li>
+      <li>An Astro project (v4 through v7)</li>
+      <li>Node.js 20 or later (Node.js 22.12+ for Astro 6 and 7)</li>
       <li>
         A server-side adapter if you want the middleware to run in production (e.g.
         <code>@astrojs/cloudflare</code>, <code>@astrojs/node</code>)
@@ -34,14 +34,14 @@ const publishedAt = '2026-02-24';
 
     <h2>Step 1 — Install the package</h2>
 
-    <pre><code>npm install astro-markdown-for-agents</code></pre>
+    <pre><code>npm install @puralex/astro-markdown-for-agents</code></pre>
 
     <h2>Step 2 — Register the integration</h2>
 
     <pre><code>// astro.config.mjs
 import &#123; defineConfig &#125; from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
-import markdownForAgents from 'astro-markdown-for-agents';
+import markdownForAgents from '@puralex/astro-markdown-for-agents';
 
 export default defineConfig(&#123;
   output: 'server',

@@ -1,0 +1,136 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL;
+const href = (path = '') => `${base}${path}`.replace(/\/{2,}/g, '/');
+
+const guides = [
+	{
+		title: 'Markdown for Agents with Astro',
+		description: 'Complete installation, configuration, testing, and deployment guide.',
+		href: 'guides/astro-markdown-for-agents/',
+		label: 'Core guide',
+	},
+	{
+		title: 'Cloudflare Free Plan Setup',
+		description: 'Runtime and static delivery options without Cloudflare Pro.',
+		href: 'guides/cloudflare-free-plan/',
+		label: 'Cloudflare',
+	},
+	{
+		title: 'Generate llms.txt in Astro',
+		description: 'Build a machine-readable page index alongside generated Markdown.',
+		href: 'guides/astro-llms-txt/',
+		label: 'Discovery',
+	},
+	{
+		title: 'Astro Starlight + text/markdown',
+		description: 'Serve cleaner documentation to coding agents and retrieval pipelines.',
+		href: 'guides/starlight-text-markdown/',
+		label: 'Documentation',
+	},
+];
+---
+
+<Layout
+	title="Astro Markdown for Agents Guides"
+	description="Guides for text/markdown negotiation, llms.txt, Cloudflare Free, and Astro Starlight."
+>
+	<main id="main-content" class="guides-page">
+		<header>
+			<p class="eyebrow">Implementation guides</p>
+			<h1>Build for agents.<br /><span>Deploy anywhere.</span></h1>
+			<p>Practical setup paths for static Astro sites, SSR adapters, Cloudflare, and Starlight.</p>
+		</header>
+		<div class="guides-grid">
+			{guides.map((guide) => (
+				<a class="card" href={href(guide.href)}>
+					<span>{guide.label}</span>
+					<h2>{guide.title}</h2>
+					<p>{guide.description}</p>
+					<b>Read guide →</b>
+				</a>
+			))}
+		</div>
+	</main>
+</Layout>
+
+<style>
+	.guides-page {
+		width: min(calc(100% - 2rem), var(--max));
+		margin: 0 auto;
+		padding-top: 6rem;
+	}
+
+	header {
+		max-width: 850px;
+	}
+
+	header h1 {
+		margin: 0;
+		font-size: clamp(3.2rem, 8vw, 6rem);
+		line-height: 0.97;
+		letter-spacing: -0.065em;
+	}
+
+	header h1 span {
+		color: var(--green);
+	}
+
+	header p:last-child {
+		max-width: 640px;
+		color: var(--muted);
+		font-size: 1.12rem;
+	}
+
+	.guides-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1rem;
+		margin-top: 4rem;
+	}
+
+	.guides-grid a {
+		display: block;
+		padding: 2rem;
+		text-decoration: none;
+		transition:
+			transform 160ms ease,
+			border-color 160ms ease;
+	}
+
+	.guides-grid a:hover {
+		transform: translateY(-2px);
+		border-color: rgba(140, 242, 176, 0.5);
+	}
+
+	.guides-grid span {
+		color: var(--green);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.guides-grid h2 {
+		margin: 0.8rem 0;
+		font-size: 1.5rem;
+		letter-spacing: -0.035em;
+	}
+
+	.guides-grid p {
+		color: var(--muted);
+	}
+
+	.guides-grid b {
+		color: var(--amber);
+		font-size: 0.82rem;
+	}
+
+	@media (max-width: 680px) {
+		.guides-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

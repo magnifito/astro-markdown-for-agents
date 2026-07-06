@@ -17,6 +17,12 @@ describe('htmlToMarkdown', () => {
     it('preserves bold inside headings', () => {
       expect(htmlToMarkdown('<h3>The <strong>main</strong> idea</h3>')).toContain('### The **main** idea');
     });
+
+    it('preserves spacing for Astro-scoped br elements inside headings', () => {
+      expect(
+        htmlToMarkdown('<h1>Markdown for Agents.<br data-astro-cid-abc>Built for Astro.</h1>'),
+      ).toBe('# Markdown for Agents. Built for Astro.');
+    });
   });
 
   describe('inline formatting', () => {
@@ -82,6 +88,18 @@ describe('htmlToMarkdown', () => {
       const result = htmlToMarkdown('<ol><li>First</li><li>Second</li></ol>');
       expect(result).toContain('1. First');
       expect(result).toContain('2. Second');
+    });
+
+    it('removes formatted HTML indentation between list items', () => {
+      const result = htmlToMarkdown(`
+        <main>
+          <ul>
+            <li>First</li>
+            <li>Second</li>
+          </ul>
+        </main>
+      `);
+      expect(result).toBe('- First\n- Second');
     });
   });
 

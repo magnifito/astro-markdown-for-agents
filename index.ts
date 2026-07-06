@@ -1,6 +1,5 @@
 import type { AstroIntegration } from 'astro';
 import fs from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { htmlToMarkdown } from './src/html-to-markdown.ts';
 
 export interface MarkdownForAgentsOptions {
@@ -12,6 +11,19 @@ export interface MarkdownForAgentsOptions {
    * markdownForAgents({ additionalAgents: ['MyCustomBot'] })
    */
   additionalAgents?: string[];
+  /**
+   * Automatically generate an `llms.txt` index file in the build directory.
+   * Defaults to `true`.
+   */
+  generateLlmsTxt?: boolean;
+  /**
+   * Title for the `llms.txt` file. Defaults to "Website Documentation".
+   */
+  siteTitle?: string;
+  /**
+   * Description for the `llms.txt` file. Defaults to "Markdown documentation for AI agents."
+   */
+  siteDescription?: string;
 }
 
 /** Virtual module ID used to pass resolved options to the middleware. */
@@ -29,7 +41,7 @@ const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID;
  * // astro.config.mjs
  * import { defineConfig } from 'astro/config';
  * import cloudflare from '@astrojs/cloudflare';
- * import markdownForAgents from 'astro-markdown-for-agents';
+ * import markdownForAgents from '@puralex/astro-markdown-for-agents';
  *
  * export default defineConfig({
  *   adapter: cloudflare(),
@@ -40,11 +52,20 @@ const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID;
 export function markdownForAgents(
   options: MarkdownForAgentsOptions = {},
 ): AstroIntegration {
-  const { additionalAgents = [] } = options;
+  const { 
+    additionalAgents = [],
+    generateLlmsTxt = true,
+    siteTitle = 'Website Documentation',
+    siteDescription = 'Markdown documentation for AI agents.',
+  } = options;
+  let basePath = '/';
 
   return {
     name: 'astro-markdown-for-agents',
     hooks: {
+      'astro:config:done': ({ config }) => {
+        basePath = config.base.endsWith('/') ? config.base : `${config.base}/`;
+      },
       'astro:config:setup': ({ addMiddleware, updateConfig, logger }) => {
         logger.info('Registering markdown-for-agents middleware');
 
@@ -77,13 +98,19 @@ export function markdownForAgents(
       },
       'astro:build:done': async ({ dir, pages, logger }) => {
         // Find all pages that generated an HTML file
-        const htmlPages = pages.filter((page) => page.pathname.endsWith('/') || page.pathname.endsWith('.html') || !page.pathname.includes('.'));
+        const htmlPages = pages.filter((page) => {
+          const cleanPath = page.pathname.replace(/^\/|\/$/g, '');
+          return cleanPath !== '404'
+            && (page.pathname.endsWith('/') || page.pathname.endsWith('.html') || !page.pathname.includes('.'));
+        });
 
         if (htmlPages.length === 0) return;
 
         logger.info(`Generating Markdown files for ${htmlPages.length} built pages`);
 
         let count = 0;
+        const generatedMdWebPaths: { title: string, path: string }[] = [];
+
         for (const page of htmlPages) {
           try {
             // Find the location of the built HTML file for this page
@@ -119,12 +146,33 @@ export function markdownForAgents(
 
             await fs.writeFile(mdFilePath, markdownContent, 'utf-8');
             count++;
+
+            const relPath = htmlFilePath.href.substring(dir.href.length).replace(/\.html$/, '.md');
+            generatedMdWebPaths.push({
+              title: page.pathname || '/',
+              path: `${basePath}${relPath}`.replace(/\/{2,}/g, '/')
+            });
           } catch (err) {
             logger.error(`Failed to generate Markdown for ${page.pathname}: ${err instanceof Error ? err.message : String(err)}`);
           }
         }
 
         logger.info(`Successfully generated ${count} Markdown files.`);
+
+        if (generateLlmsTxt && generatedMdWebPaths.length > 0) {
+          logger.info('Generating llms.txt index file');
+          try {
+            let llmsTxt = `# ${siteTitle}\n> ${siteDescription}\n\n## Pages\n`;
+            for (const item of generatedMdWebPaths) {
+              llmsTxt += `- [${item.title}](${item.path})\n`;
+            }
+            const llmsTxtPath = new URL('./llms.txt', dir);
+            await fs.writeFile(llmsTxtPath, llmsTxt, 'utf-8');
+            logger.info('Successfully generated llms.txt file.');
+          } catch (err) {
+            logger.error(`Failed to generate llms.txt: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }
       },
     },
   };

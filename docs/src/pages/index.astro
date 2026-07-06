@@ -1,0 +1,766 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { htmlToMarkdown } from '@puralex/astro-markdown-for-agents/html-to-markdown';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const packageJson = JSON.parse(
+	readFileSync(resolve(process.cwd(), '../package.json'), 'utf8'),
+) as { version: string };
+
+const base = import.meta.env.BASE_URL;
+const href = (path = '') => `${base}${path}`.replace(/\/{2,}/g, '/');
+
+const sampleHtml = `<nav><a href="/">Docs</a><a href="/pricing">Pricing</a></nav>
+<main>
+  <h1>Deploy an Astro site</h1>
+  <p>Build fast, content-driven websites with clean output.</p>
+  <h2>Install</h2>
+  <pre><code>pnpm create astro@latest</code></pre>
+  <ul><li>Zero client JavaScript by default</li><li>Deploy anywhere</li></ul>
+</main>
+<footer>Copyright and navigation noise</footer>`;
+
+const sampleMarkdown = htmlToMarkdown(sampleHtml);
+const htmlBytes = new TextEncoder().encode(sampleHtml).length;
+const markdownBytes = new TextEncoder().encode(sampleMarkdown).length;
+const reduction = Math.round((1 - markdownBytes / htmlBytes) * 100);
+---
+
+<Layout
+	title="Markdown for Agents for Astro — Static Markdown, SSR Negotiation, llms.txt"
+	description="Serve clean Markdown and generate llms.txt from Astro sites—static or SSR, including Cloudflare Free."
+>
+	<main id="main-content">
+		<section class="hero section">
+			<div class="hero-copy">
+				<p class="eyebrow">Open source · v{packageJson.version} · Astro 4–7</p>
+				<h1>Markdown for Agents.<br /><span>Built for Astro.</span></h1>
+				<p class="hero-lede">
+					Serve clean Markdown at request time, generate static <code>.md</code> pages,
+					and publish <code>llms.txt</code>—without requiring a paid Cloudflare plan.
+				</p>
+				<div class="hero-actions">
+					<a
+						class="button button-primary"
+						href="#install"
+						data-track="hero-install"
+					>Install integration</a>
+					<a
+						class="button button-secondary"
+						href={href('index.md')}
+						data-track="hero-markdown"
+					>View this page as Markdown ↗</a>
+				</div>
+				<p class="hero-note">Zero runtime dependencies. Normal browser responses stay unchanged.</p>
+			</div>
+
+			<div class="terminal card" aria-label="Installation example">
+				<div class="terminal-top">
+					<span></span><span></span><span></span>
+					<p>astro.config.mjs</p>
+				</div>
+				<pre><code><b>$</b> pnpm add @puralex/astro-markdown-for-agents
+
+<span>import</span> markdownForAgents
+  <span>from</span> '@puralex/astro-markdown-for-agents';
+
+export default defineConfig(&#123;
+  integrations: [markdownForAgents()]
+&#125;);</code></pre>
+				<div class="terminal-status">
+					<span class="status-dot"></span>
+					<span>Markdown routes ready</span>
+					<code>/llms.txt</code>
+				</div>
+			</div>
+		</section>
+
+		<ul class="proof-strip" aria-label="Project evidence">
+			<li><strong>0</strong> <span>runtime dependencies</span></li>
+			<li><strong>99</strong> <span>automated tests</span></li>
+			<li><strong>{reduction}%</strong> <span>smaller demo payload</span></li>
+			<li><strong>4–7</strong> <span>Astro peer range</span></li>
+		</ul>
+
+		<section id="how-it-works" class="section">
+			<div class="section-heading">
+				<p class="eyebrow">Two delivery modes</p>
+				<h2>One integration. Static and server-rendered sites.</h2>
+				<p>
+					Delivery behavior stays explicit. Runtime sites negotiate by HTTP header.
+					Static hosts expose generated Markdown files directly.
+				</p>
+			</div>
+
+			<div class="mode-grid">
+				<article class="mode-card card">
+					<p class="mode-number">01 / Runtime</p>
+					<h3>Content negotiation for SSR</h3>
+					<p>
+						Requests containing <code>Accept: text/markdown</code> receive converted
+						Markdown. HTML, JSON, images, and browser traffic pass through.
+					</p>
+					<pre><code>curl -H "Accept: text/markdown" \
+  https://your-site.dev/docs</code></pre>
+					<ul>
+						<li>Cloudflare Workers</li>
+						<li>Node, Vercel, Deno</li>
+						<li>Correct <code>Vary</code> headers</li>
+					</ul>
+				</article>
+
+				<article class="mode-card card">
+					<p class="mode-number">02 / Static</p>
+					<h3>Markdown files at build time</h3>
+					<p>
+						Every generated HTML page gets a matching <code>.md</code> file.
+						The <code>llms.txt</code> index maps the full machine-readable site.
+					</p>
+					<pre><code>dist/
+├── index.html
+├── index.md
+├── docs/index.md
+└── llms.txt</code></pre>
+					<ul>
+						<li>GitHub Pages and static hosts</li>
+						<li>No runtime function required</li>
+						<li>Optional host rewrite for negotiation</li>
+					</ul>
+				</article>
+			</div>
+		</section>
+
+		<section id="demo" class="section">
+			<div class="section-heading">
+				<p class="eyebrow">Measured demo</p>
+				<h2>Navigation noise out. Content structure in.</h2>
+				<p>
+					This output is generated during the documentation build by the same converter
+					exported in the npm package.
+				</p>
+			</div>
+
+			<div class="demo-grid">
+				<div class="code-panel card">
+					<div class="panel-label">
+						<span>HTML input</span>
+						<code>{htmlBytes} bytes</code>
+					</div>
+					<pre><code>{sampleHtml}</code></pre>
+				</div>
+				<div class="code-panel output card">
+					<div class="panel-label">
+						<span>Markdown output</span>
+						<code>{markdownBytes} bytes</code>
+					</div>
+					<pre><code>{sampleMarkdown}</code></pre>
+				</div>
+			</div>
+			<div class="demo-actions">
+				<a class="button button-secondary" href={href('demo/')}>Open full demo</a>
+				<a class="text-link" href={href('index.md')}>Inspect generated Markdown →</a>
+			</div>
+		</section>
+
+		<section id="install" class="section">
+			<div class="install-card card">
+				<div>
+					<p class="eyebrow">Start in one command</p>
+					<h2>Make your Astro site readable by agents.</h2>
+					<p>Then choose runtime negotiation, static files, or both.</p>
+				</div>
+				<div class="install-command">
+					<code>pnpm add @puralex/astro-markdown-for-agents</code>
+					<a
+						href="https://www.npmjs.com/package/@puralex/astro-markdown-for-agents"
+						aria-label="Open package on npm"
+						data-track="install-npm"
+					>npm ↗</a>
+				</div>
+			</div>
+		</section>
+
+		<section class="section">
+			<div class="section-heading">
+				<p class="eyebrow">Choose with evidence</p>
+				<h2>How approaches compare.</h2>
+			</div>
+			<div class="comparison card">
+				<table>
+					<thead>
+						<tr>
+							<th>Capability</th>
+							<th>This integration</th>
+							<th>Cloudflare feature</th>
+							<th>DIY build script</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr><td>Runtime negotiation</td><td>Yes, with SSR</td><td>Yes</td><td>Host-specific</td></tr>
+						<tr><td>Static <code>.md</code> files</td><td>Yes</td><td>No</td><td>Yes</td></tr>
+						<tr><td><code>llms.txt</code></td><td>Generated</td><td>Manual</td><td>Manual</td></tr>
+						<tr><td>Cloudflare Free</td><td>Yes</td><td>No</td><td>Yes</td></tr>
+						<tr><td>Runtime dependencies</td><td>None</td><td>Managed service</td><td>Varies</td></tr>
+						<tr><td>Astro-aware build</td><td>Yes</td><td>No</td><td>Usually not</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="comparison-note">
+				Cloudflare comparison reflects its published Pro, Business, and Enterprise availability.
+			</p>
+		</section>
+
+		<section class="section">
+			<div class="section-heading">
+				<p class="eyebrow">Practical guides</p>
+				<h2>Ship it on your stack.</h2>
+			</div>
+			<div class="guide-grid">
+				<a class="guide-card card" href={href('guides/astro-markdown-for-agents/')}>
+					<span>Core guide</span>
+					<h3>Markdown for Agents with Astro</h3>
+					<p>Install, configure, test, and deploy runtime negotiation.</p>
+					<b>Read guide →</b>
+				</a>
+				<a class="guide-card card" href={href('guides/cloudflare-free-plan/')}>
+					<span>Cloudflare</span>
+					<h3>Cloudflare Free Plan Setup</h3>
+					<p>Use SSR middleware or generated Markdown without upgrading.</p>
+					<b>Read guide →</b>
+				</a>
+				<a class="guide-card card" href={href('guides/astro-llms-txt/')}>
+					<span>Discovery</span>
+					<h3>Generate llms.txt in Astro</h3>
+					<p>Publish a machine-readable map alongside Markdown pages.</p>
+					<b>Read guide →</b>
+				</a>
+				<a class="guide-card card" href={href('guides/starlight-text-markdown/')}>
+					<span>Documentation</span>
+					<h3>Astro Starlight + text/markdown</h3>
+					<p>Make documentation cheaper and cleaner for coding agents.</p>
+					<b>Read guide →</b>
+				</a>
+			</div>
+		</section>
+
+		<section class="section pilot-section">
+			<div class="pilot-card card">
+				<p class="eyebrow">Early adopter program</p>
+				<h2>Running Astro docs in production?</h2>
+				<p>
+					We are recruiting the first ten public deployments. Get setup help,
+					benchmark review, and a permanent link from this project.
+				</p>
+				<div>
+					<a
+						class="button button-primary"
+						href="https://github.com/magnifito/astro-markdown-for-agents/issues/new?template=pilot.yml"
+						data-track="pilot-apply"
+					>Apply with your site</a>
+					<a class="button button-secondary" href="https://github.com/magnifito/astro-markdown-for-agents">
+						Star on GitHub
+					</a>
+				</div>
+			</div>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.hero {
+		display: grid;
+		grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.92fr);
+		align-items: center;
+		gap: clamp(3rem, 8vw, 8rem);
+		min-height: 670px;
+		padding-top: 3rem;
+	}
+
+	.hero h1 {
+		max-width: 760px;
+		margin: 0;
+		font-size: clamp(3.4rem, 7.5vw, 6.7rem);
+		line-height: 0.94;
+		letter-spacing: -0.07em;
+	}
+
+	.hero h1 span {
+		color: var(--green);
+	}
+
+	.hero-lede {
+		max-width: 670px;
+		margin: 1.8rem 0 0;
+		color: #b9cbc3;
+		font-size: clamp(1.08rem, 2vw, 1.28rem);
+		line-height: 1.65;
+	}
+
+	.hero-lede code {
+		color: var(--amber);
+	}
+
+	.hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.7rem;
+		margin-top: 2rem;
+	}
+
+	.hero-note {
+		margin: 1.2rem 0 0;
+		color: var(--faint);
+		font-size: 0.88rem;
+	}
+
+	.terminal {
+		overflow: hidden;
+		background: #050b09;
+		box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+	}
+
+	.terminal-top {
+		display: flex;
+		align-items: center;
+		gap: 0.38rem;
+		height: 44px;
+		padding: 0 0.9rem;
+		border-bottom: 1px solid var(--line);
+		background: #0c1815;
+	}
+
+	.terminal-top > span {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #345149;
+	}
+
+	.terminal-top > span:first-child {
+		background: #ff806c;
+	}
+
+	.terminal-top > span:nth-child(2) {
+		background: #ffcb7a;
+	}
+
+	.terminal-top p {
+		margin: 0 0 0 auto;
+		color: var(--faint);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 0.72rem;
+	}
+
+	.terminal pre {
+		overflow-x: auto;
+		min-height: 288px;
+		margin: 0;
+		padding: 1.5rem;
+		color: #c7d8d0;
+		font-size: clamp(0.73rem, 1.3vw, 0.85rem);
+		line-height: 1.8;
+	}
+
+	.terminal pre span,
+	.terminal pre b {
+		color: var(--green);
+		font-weight: 600;
+	}
+
+	.terminal-status {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.8rem 1rem;
+		border-top: 1px solid var(--line);
+		color: var(--muted);
+		font-size: 0.78rem;
+	}
+
+	.terminal-status code {
+		margin-left: auto;
+		color: var(--amber);
+	}
+
+	.status-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--green-strong);
+		box-shadow: 0 0 12px var(--green-strong);
+	}
+
+	.proof-strip {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		width: min(calc(100% - 2rem), var(--max));
+		margin: 0 auto;
+		padding: 0;
+		border-block: 1px solid var(--line);
+		list-style: none;
+	}
+
+	.proof-strip li {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		padding: 1.7rem;
+		border-right: 1px solid var(--line);
+	}
+
+	.proof-strip li:last-child {
+		border-right: 0;
+	}
+
+	.proof-strip strong {
+		color: var(--green);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 1.5rem;
+	}
+
+	.proof-strip span {
+		color: var(--muted);
+		font-size: 0.82rem;
+	}
+
+	.mode-grid,
+	.demo-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.mode-card {
+		padding: clamp(1.5rem, 4vw, 2.4rem);
+	}
+
+	.mode-number {
+		margin: 0 0 2rem;
+		color: var(--green);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.mode-card h3 {
+		margin: 0;
+		font-size: 1.5rem;
+		letter-spacing: -0.03em;
+	}
+
+	.mode-card > p:not(.mode-number) {
+		min-height: 78px;
+		color: var(--muted);
+	}
+
+	.mode-card > p code,
+	.mode-card li code {
+		color: var(--amber);
+	}
+
+	.mode-card pre {
+		overflow-x: auto;
+		min-height: 110px;
+		margin: 1.6rem 0;
+		padding: 1rem;
+		border: 1px solid var(--line);
+		border-radius: 0.5rem;
+		background: var(--code);
+		color: #d4e4dd;
+		font-size: 0.8rem;
+		line-height: 1.65;
+	}
+
+	.mode-card ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.mode-card li {
+		padding: 0.4rem 0;
+		border-bottom: 1px solid rgba(29, 55, 48, 0.65);
+		color: #b7c8c0;
+		font-size: 0.9rem;
+	}
+
+	.mode-card li::before {
+		margin-right: 0.55rem;
+		color: var(--green);
+		content: "✓";
+	}
+
+	.code-panel {
+		overflow: hidden;
+		background: var(--code);
+	}
+
+	.code-panel.output {
+		border-color: rgba(140, 242, 176, 0.38);
+	}
+
+	.panel-label {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		border-bottom: 1px solid var(--line);
+		background: var(--surface);
+		color: var(--muted);
+		font-size: 0.78rem;
+		font-weight: 700;
+	}
+
+	.panel-label code {
+		color: var(--amber);
+		font-weight: 400;
+	}
+
+	.code-panel pre {
+		overflow: auto;
+		height: 320px;
+		margin: 0;
+		padding: 1.2rem;
+		color: #c9d9d2;
+		font-size: 0.76rem;
+		line-height: 1.65;
+		white-space: pre-wrap;
+	}
+
+	.demo-actions {
+		display: flex;
+		align-items: center;
+		gap: 1.2rem;
+		margin-top: 1.2rem;
+	}
+
+	.text-link {
+		color: var(--green);
+		font-size: 0.9rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.install-card {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		align-items: end;
+		gap: 3rem;
+		padding: clamp(1.5rem, 5vw, 3.5rem);
+		border-color: rgba(140, 242, 176, 0.28);
+		background:
+			linear-gradient(120deg, rgba(140, 242, 176, 0.08), transparent 50%),
+			var(--surface);
+	}
+
+	.install-card h2 {
+		max-width: 590px;
+		margin: 0;
+		font-size: clamp(2rem, 5vw, 3.2rem);
+		line-height: 1.05;
+		letter-spacing: -0.045em;
+	}
+
+	.install-card p:last-child {
+		color: var(--muted);
+	}
+
+	.install-command {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		min-width: 0;
+		padding: 1rem;
+		border: 1px solid var(--line);
+		border-radius: 0.55rem;
+		background: var(--code);
+	}
+
+	.install-command code {
+		overflow-x: auto;
+		min-width: 0;
+		color: var(--green);
+		font-size: 0.78rem;
+		white-space: nowrap;
+	}
+
+	.install-command a {
+		margin-left: auto;
+		color: var(--amber);
+		font-size: 0.78rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.comparison {
+		overflow-x: auto;
+	}
+
+	.comparison table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.comparison th,
+	.comparison td {
+		padding: 1rem 1.2rem;
+		border-bottom: 1px solid var(--line);
+		text-align: left;
+	}
+
+	.comparison th {
+		color: var(--muted);
+		font-size: 0.75rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.comparison td {
+		color: #b8c9c1;
+		font-size: 0.9rem;
+	}
+
+	.comparison td:nth-child(2) {
+		color: var(--green);
+	}
+
+	.comparison code {
+		color: var(--amber);
+	}
+
+	.comparison tr:last-child td {
+		border-bottom: 0;
+	}
+
+	.comparison-note {
+		color: var(--faint);
+		font-size: 0.8rem;
+	}
+
+	.guide-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.guide-card {
+		display: block;
+		padding: 1.7rem;
+		text-decoration: none;
+		transition:
+			transform 160ms ease,
+			border-color 160ms ease;
+	}
+
+	.guide-card:hover {
+		transform: translateY(-2px);
+		border-color: rgba(140, 242, 176, 0.55);
+	}
+
+	.guide-card > span {
+		color: var(--green);
+		font-family: "SFMono-Regular", Consolas, monospace;
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.guide-card h3 {
+		margin: 0.7rem 0 0;
+		font-size: 1.25rem;
+	}
+
+	.guide-card p {
+		margin: 0.6rem 0 1.4rem;
+		color: var(--muted);
+	}
+
+	.guide-card b {
+		color: var(--amber);
+		font-size: 0.82rem;
+	}
+
+	.pilot-card {
+		padding: clamp(2rem, 6vw, 4.5rem);
+		text-align: center;
+	}
+
+	.pilot-card h2 {
+		margin: 0;
+		font-size: clamp(2.3rem, 6vw, 4.5rem);
+		line-height: 1;
+		letter-spacing: -0.055em;
+	}
+
+	.pilot-card > p:not(.eyebrow) {
+		max-width: 650px;
+		margin: 1.3rem auto 2rem;
+		color: var(--muted);
+		font-size: 1.06rem;
+	}
+
+	.pilot-card > div {
+		display: flex;
+		justify-content: center;
+		gap: 0.7rem;
+	}
+
+	@media (max-width: 900px) {
+		.hero {
+			grid-template-columns: 1fr;
+			min-height: auto;
+			padding-top: 5rem;
+		}
+
+		.terminal {
+			width: 100%;
+			max-width: 650px;
+		}
+
+		.proof-strip {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.proof-strip li:nth-child(2) {
+			border-right: 0;
+		}
+
+		.proof-strip li:nth-child(-n + 2) {
+			border-bottom: 1px solid var(--line);
+		}
+
+		.install-card {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	@media (max-width: 680px) {
+		.mode-grid,
+		.demo-grid,
+		.guide-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.hero h1 {
+			font-size: clamp(3rem, 17vw, 5rem);
+		}
+
+		.proof-strip li {
+			padding: 1.2rem;
+		}
+
+		.demo-actions,
+		.pilot-card > div {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.text-link {
+			padding: 0.7rem;
+			text-align: center;
+		}
+	}
+</style>

@@ -1,0 +1,59 @@
+name: Pilot site
+description: Request setup help and submit a public Astro deployment.
+title: "Pilot site: "
+labels:
+  - pilot
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pilot sites receive setup help and a Markdown payload review. Public attribution requires explicit approval below.
+  - type: input
+    id: site
+    attributes:
+      label: Public site URL
+      placeholder: https://docs.example.com
+    validations:
+      required: true
+  - type: dropdown
+    id: hosting
+    attributes:
+      label: Hosting platform
+      options:
+        - Cloudflare
+        - Vercel
+        - Netlify
+        - GitHub Pages
+        - Node server
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: astro
+    attributes:
+      label: Astro version
+      placeholder: "7.0.6"
+    validations:
+      required: true
+  - type: dropdown
+    id: output
+    attributes:
+      label: Output mode
+      options:
+        - Static
+        - Server
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal or current blocker
+    validations:
+      required: true
+  - type: checkboxes
+    id: attribution
+    attributes:
+      label: Attribution permission
+      options:
+        - label: You may list this site in project documentation after successful deployment.
