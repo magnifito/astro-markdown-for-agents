@@ -1,17 +1,24 @@
-# Astro Discord — showcase
+# Astro Discord post
 
-Built an Astro integration for Markdown for Agents:
+I shipped `@puralex/astro-markdown-for-agents` v0.3 for Astro sites that want Markdown delivery for agents.
 
-- `Accept: text/markdown` negotiation for SSR
-- matching `.md` files for static builds
-- automatic `llms.txt`
+It handles two deployment modes:
+
+- SSR: negotiate `Accept: text/markdown` at the original URL
+- static: generate matching `.md` pages and `llms.txt` during build
+
+Other details:
+
 - zero runtime dependencies
 - Astro 4–7 peer support
+- docs include a measured HTML-to-Markdown demo
 
-Static and runtime behavior are documented separately—GitHub Pages demo uses explicit `.md` URLs, while server adapters negotiate at the original URL.
+Demo:
 
-Demo: https://magnifito.github.io/astro-markdown-for-agents/demo/?utm_source=astro-discord&utm_medium=community&utm_campaign=launch-0-3
+https://magnifito.github.io/astro-markdown-for-agents/demo/?utm_source=astro-discord&utm_medium=community&utm_campaign=launch-0-3
 
-GitHub: https://github.com/magnifito/astro-markdown-for-agents
+Source:
 
-Looking for ten Astro/Starlight sites to test real documentation payloads. Feedback on converter edge cases welcome.
+https://github.com/magnifito/astro-markdown-for-agents
+
+If you run Astro or Starlight docs, I’m looking for a few real sites to test tables, code blocks, callouts, and custom components.
