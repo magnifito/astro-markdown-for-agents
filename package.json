@@ -1,6 +1,6 @@
 {
   "name": "@puralex/astro-markdown-for-agents",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Markdown for Agents integration for Astro with text/markdown negotiation, static Markdown files, and llms.txt",
   "type": "module",
   "main": "./dist/index.js",
@@ -66,9 +66,9 @@
     "astro": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
   },
   "devDependencies": {
-    "@astrojs/node": "^11.0.2",
+    "@astrojs/node": "^11.1.5",
     "@types/node": "^25.3.0",
-    "astro": "^7.0.0",
+    "astro": "^7.3.2",
     "tsup": "^8.5.0",
     "typescript": "^5.0.0",
     "vitest": "^3.2.0"
