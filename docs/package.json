@@ -13,8 +13,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/sitemap": "^3.7.4",
     "@puralex/astro-markdown-for-agents": "workspace:*",
-    "astro": "^7.0.6"
+    "astro": "^7.3.2"
   }
 }
